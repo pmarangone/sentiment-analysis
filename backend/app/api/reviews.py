@@ -6,7 +6,12 @@ from fastapi import (
     Request,
 )
 
-from app.core.core import core_create_review, core_get_review_by_id, core_get_reviews
+from app.core.core import (
+    core_create_review,
+    core_get_review_by_id,
+    core_get_reviews,
+    core_get_classification_count,
+)
 from app.models.review import BaseReviewModel
 from app.utils.logger import get_logger
 
@@ -27,11 +32,11 @@ async def post_review(request: Request, review: BaseReviewModel):
 
 @reviews_router.get("/report")
 async def get_reviews_report(
+    request: Request,
     start_date: Annotated[str, Query()],
     end_date: Annotated[str, Query()],
 ):
-    print(start_date, end_date)
-    pass
+    return core_get_classification_count(request, start_date, end_date)
 
 
 @reviews_router.get("/{id}")

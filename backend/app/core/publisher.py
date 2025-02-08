@@ -33,7 +33,7 @@ class RabbitMQPool:
         )
 
     async def publish_message(
-        self, message_body: str, queue_name: str = "transcription_queue"
+        self, message_body: str, queue_name: str = "sentiment_analysis_queue"
     ):
         """Publish a message to the specified queue."""
         if not self.connection_pool or not self.channel_pool:

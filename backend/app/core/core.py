@@ -71,3 +71,20 @@ def core_get_reviews(request: Request):
         error = str(exc)
         logger.error(f"Error while fetching reviews: {error}")
         return server_error(error)
+
+
+def core_get_classification_count(request: Request, start_date, end_date):
+    repository: ReviewRepository = request.app.state.review_repository
+
+    try:
+        with repository.sessionmaker() as session:
+            report = repository.get_classification_count(session, start_date, end_date)
+
+        if report:
+            return success(report)
+        return not_found()
+
+    except Exception as exc:
+        error = str(exc)
+        logger.error(f"Error while fetching report: {error}")
+        return server_error(error)
