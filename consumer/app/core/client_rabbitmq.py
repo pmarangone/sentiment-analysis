@@ -16,6 +16,8 @@ class RabbitMQPool:
         self.channel_pool = None
 
     async def init_pool(self):
+        """Inicializa a conexão com RabbitMQ e uma pool de conexões."""
+
         async def get_connection() -> AbstractRobustConnection:
             return await aio_pika.connect_robust(self.uri)
 
@@ -32,6 +34,11 @@ class RabbitMQPool:
         )
 
     async def listen_to_rabbitmq(self):
+        """Escuta a fila do RabbitMQ e processa as mensagens recebidas.
+
+        Raises:
+        RuntimeError: Caso não exista uma conexão ativa ou um canal ativo para a pool.
+        """
         if not self.connection_pool or not self.channel_pool:
             raise RuntimeError("RabbitMQ pools are not initialized.")
 

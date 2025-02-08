@@ -12,6 +12,15 @@ logger = get_logger(__name__)
 
 
 async def predict_sentiment(message: IncomingMessage):
+    """
+    Processa a mensagem, prediz o sentimento e atualiza o banco de dados.
+
+    Args:
+        message: A mensagem do RabbitMQ contendo os dados da avaliação.
+
+    Raises:
+        Exception: Se ocorrer algum erro durante o processamento.
+    """
     try:
         message_data = json.loads(message.body.decode("utf-8"))
 

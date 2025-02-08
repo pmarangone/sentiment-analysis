@@ -11,6 +11,14 @@ logger = get_logger(__name__)
 
 class ReviewRepository:
     def __init__(self, url):
+        """Inicializa a conexão com o banco de dados e um gerador de sessões.
+
+        Args:
+        url: URL para a conexão com o banco de dados, ex: postgresql+psycopg://user:password@localhost/database
+
+        Raises:
+        Exception: Caso a criação da conexão falhe
+        """
         logger.info("Creating database connection")
 
         # TODO: handle the database connection properly
@@ -21,10 +29,19 @@ class ReviewRepository:
         )
 
     def initialize_schema(self):
+        """Inicializa as tabelas no banco de dados."""
         logger.info("Creating database schemas")
         Base.metadata.create_all(bind=self.engine)
 
     def update_review(self, session, review_id: str, classification):
+        """Atualiza a classificação de uma avaliação no banco de dados.
+
+        Args:
+            session: Instância de sqlalchemy.orm.sessionmaker, responsável por gerenciar uma sessão
+            do banco de dados.
+            review_id: ID da avaliação.
+            classification: Classificação referente a avaliação.
+        """
         review: ReviewSchema = (
             session.query(ReviewSchema)
             .with_for_update()

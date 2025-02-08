@@ -1,3 +1,10 @@
+"""Arquivo principal para a inicialização da aplicação.
+
+1. Inicializa a API, passando como parâmetro `lifespan`.
+2. Adiciona CORS. Nesse caso, permite todas requisições.
+3. Adiciona os endpoints da API.
+"""
+
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +20,8 @@ logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Inicializa ReviewRepository e RabbitMQPool, guardando as instâncias no estado da aplicação para
+    serem reutilizadas a cada request. Dessa forma, segue-se o Singleton Pattern"""
     app.state.review_repository = ReviewRepository(DATABASE_URL)
     app.state.review_repository.initialize_schema()
 

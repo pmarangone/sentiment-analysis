@@ -13,10 +13,22 @@ logger = get_logger(__name__)
 
 
 async def core_create_review(request: Request, review: BaseReviewModel):
-    repository: ReviewRepository = request.app.state.review_repository
-    rabbitmq_pool: RabbitMQPool = request.app.state.rabbitmq_pool
-
+    """Cria a avaliação no banco de dados e envia a avaliação e o ID da entrada
+    no banco de dados para o consumidor.
+    
+    Args:
+    request: Instância de fastapi.Request
+    review: Instância derivada de pydantic.BaseModel, que foi enviado no corpo da requisição.
+    
+    Returns:
+    criada: A entrada do usuário tal como foi criada no banco de dados. 
+    erro_servidor: Mensagem de erro, seja em criar a entrada no banco de dados ou em enviar a mensagem para
+    o consumidor.
+    """
     try:
+        repository: ReviewRepository = request.app.state.review_repository
+        rabbitmq_pool: RabbitMQPool = request.app.state.rabbitmq_pool
+
         with repository.sessionmaker() as session:
             created_review = repository.create_review(session, review)
             session.commit()
@@ -31,6 +43,7 @@ async def core_create_review(request: Request, review: BaseReviewModel):
 
         await rabbitmq_pool.publish_message(json.dumps(message))
 
+        # TODO: remove id
         return created(created_review)
 
     except Exception as exc:
@@ -40,9 +53,19 @@ async def core_create_review(request: Request, review: BaseReviewModel):
 
 
 def core_get_review_by_id(request: Request, id: uuid.UUID):
-    repository: ReviewRepository = request.app.state.review_repository
-
+    """Busca no banco de dados uma avaliação pelo id.
+    
+    Args:
+    request: Instância de fastapi.Request
+    id: Instância uuid.UUID referente a avaliação
+    
+    Returns:
+    sucesso: A avaliação do usuário
+    não_encontrado: Retorno padrão caso nenhum entrada com o id seja encontrada no banco de dados
+    erro_servidor: Mensagem de erro
+    """
     try:
+        repository: ReviewRepository = request.app.state.review_repository
         with repository.sessionmaker() as session:
             review = repository.get_review_by_id(session, id)
 
@@ -56,10 +79,20 @@ def core_get_review_by_id(request: Request, id: uuid.UUID):
         return server_error(error)
 
 
+# TODO: retuns just { remove id and name from response }
 def core_get_reviews(request: Request):
-    repository: ReviewRepository = request.app.state.review_repository
-
+    """Busca no banco de dados todas as avaliações.
+    
+    Args:
+    request: Instância de fastapi.Request
+    
+    Returns:
+    sucesso: Lista, do tipo Json, com todas as avaliações
+    não_encontrado: Retorno padrão caso nenhuma entrada seja encontrada no banco de dados
+    erro_servidor: Mensagem de erro
+    """
     try:
+        repository: ReviewRepository = request.app.state.review_repository
         with repository.sessionmaker() as session:
             reviews = repository.get_reviews(session)
 
@@ -74,9 +107,21 @@ def core_get_reviews(request: Request):
 
 
 def core_get_classification_count(request: Request, start_date, end_date):
-    repository: ReviewRepository = request.app.state.review_repository
+    """Gera um relatório do número de avaliações positivas, negativas ou neutras
+    feitas entre a data inicial e a data final (inclusiva).
 
+    Args:
+    request: Instância de fastapi.Request
+    start_date: A data inicial da busca 
+    end_date: A data final da busca
+
+    Returns:
+    sucesso: Lista, do tipo Json, com todas as avaliações feitas entre a data inicial e data final
+    não_encontrado: Retorno padrão caso nenhuma entrada seja encontrada no banco de dados
+    erro_servidor: Mensagem de erro
+    """
     try:
+        repository: ReviewRepository = request.app.state.review_repository
         with repository.sessionmaker() as session:
             report = repository.get_classification_count(session, start_date, end_date)
 
