@@ -16,17 +16,17 @@ reviews_router = APIRouter(prefix="/reviews")
 
 
 @reviews_router.get("/")
-def get_reviews(request: Request):
+async def get_reviews(request: Request):
     return core_get_reviews(request)
 
 
 @reviews_router.post("/")
-def post_review(request: Request, review: BaseReviewModel):
-    return core_create_review(request, review)
+async def post_review(request: Request, review: BaseReviewModel):
+    return await core_create_review(request, review)
 
 
 @reviews_router.get("/report")
-def get_reviews_report(
+async def get_reviews_report(
     start_date: Annotated[str, Query()],
     end_date: Annotated[str, Query()],
 ):
@@ -35,5 +35,5 @@ def get_reviews_report(
 
 
 @reviews_router.get("/{id}")
-def get_review_by_id(request: Request, id: uuid.UUID):
+async def get_review_by_id(request: Request, id: uuid.UUID):
     return core_get_review_by_id(request, id)

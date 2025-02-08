@@ -13,12 +13,18 @@ class ReviewRepository:
     def __init__(self, url):
         logger.info("Creating database connection")
 
-        # TODO: handle the database connection properly
-        # do not initialize it if create_engine fails
-        self.engine = create_engine(url)
-        self.sessionmaker = sessionmaker(
-            autocommit=False, autoflush=False, bind=self.engine
-        )
+        try:
+            # TODO: handle the database connection properly
+            # do not initialize it if create_engine fails
+            self.engine = create_engine(url)
+            self.sessionmaker = sessionmaker(
+                autocommit=False, autoflush=False, bind=self.engine
+            )
+
+        except Exception as exc:
+            error = str(exc)
+            logger.error(f"Error occurred: {error}")
+            raise error
 
     def initialize_schema(self):
         logger.info("Creating database schemas")

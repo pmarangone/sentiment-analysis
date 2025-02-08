@@ -1,3 +1,5 @@
+import base64
+import json
 import uuid
 from fastapi import Request
 from app.api.responses import created, not_found, server_error, success
@@ -5,16 +7,29 @@ from app.db.review_repository import ReviewRepository
 from app.models.review import BaseReviewModel
 from app.utils.logger import get_logger
 
+from .publisher import RabbitMQPool
+
 logger = get_logger(__name__)
 
 
-def core_create_review(request: Request, review: BaseReviewModel):
+async def core_create_review(request: Request, review: BaseReviewModel):
     repository: ReviewRepository = request.app.state.review_repository
+    rabbitmq_pool: RabbitMQPool = request.app.state.rabbitmq_pool
 
     try:
         with repository.sessionmaker() as session:
             created_review = repository.create_review(session, review)
             session.commit()
+            session.refresh(created_review)
+
+        message = {
+            "review_id": str(created_review.id),
+            "review_bytes": base64.b64encode(
+                created_review.review_data.encode()
+            ).decode("utf-8"),
+        }
+
+        await rabbitmq_pool.publish_message(json.dumps(message))
 
         return created(created_review)
 
