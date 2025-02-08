@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:13
+    container_name: postgres-sentiment-analysis
+    environment:
+      - POSTGRES_DB=database
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    networks:
+      - sentiment-network
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq-sentiment-analysis
+    ports:
+      - "5672:5672"  
+      - "15672:15672"  
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - sentiment-network
+
+  consumer:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: sentiment-analysis-consumer
+    environment:
+      - DATABASE_URL=postgresql+psycopg://user:password@postgres:5432/database
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+      - POOL_SIZE=3
+      - MAX_RETRIES=3
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - sentiment-network
+
+  sentiment-analysis:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sentiment-analysis-server
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://user:password@postgres:5432/database
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+      - POOL_SIZE=3
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - sentiment-network
+
+volumes:
+  rabbitmq_data:
+    driver: local
+
+networks:
+  sentiment-network:
+    driver: bridge

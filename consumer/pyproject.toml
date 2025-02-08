@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 
 dependencies = [
     "aio-pika>=9.5.4",
-    "psycopg>=3.2.4",
+    "psycopg[binary]>=3.2.4",
     "pysentimiento>=0.7.3",
     "sqlalchemy>=2.0.38",
 ]
