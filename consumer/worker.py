@@ -13,7 +13,6 @@ async def main():
 
         await rabbitmq_pool.listen_to_rabbitmq()
 
-    # TODO: handle shutdown gracefully
     except Exception as e:
         logger.error(f"Consumer encountered an error: {e}")
     finally:

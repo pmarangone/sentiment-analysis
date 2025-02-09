@@ -32,17 +32,11 @@ class ReviewRepository:
             logger.error(f"Error occurred: {error}")
             raise error
 
-    # TODO: what does it raises? kkk
     def initialize_schema(self):
-        """Inicializa as tabelas no banco de dados.
-
-        Raises:
-
-        """
+        """Inicializa as tabelas no banco de dados."""
         logger.info("Creating database schemas")
         Base.metadata.create_all(bind=self.engine)
 
-    # TODO: raise
     def get_reviews(self, session):
         """Busca todas as avaliações no banco de dados.
 
@@ -51,13 +45,9 @@ class ReviewRepository:
         do banco de dados.
 
         Returns: Todas as avaliações guardadas no banco de dados ou nenhum.
-
-        Raises:
-
         """
         return session.query(ReviewSchema).all()
 
-    # TODO: raise
     def get_review_by_id(self, session, review_id: str) -> ReviewSchema:
         """Busca uma avaliação no banco de dados, filtrada por ID.
 
@@ -67,9 +57,6 @@ class ReviewRepository:
         review_id: uuid.UUID, o ID da avaliação.
 
         Returns: Avaliação feita ou nenhum.
-
-        Raises:
-
         """
         return session.query(ReviewSchema).filter_by(id=review_id).first()
 
@@ -81,8 +68,6 @@ class ReviewRepository:
         end_date: Data final da busca.
 
         Returns: Relatório com contagem das avaliações classificadas como positiva, negativa ou neutra.
-        Raises:
-
         """
         query = text("""
         SELECT classification, COUNT(*) FROM reviews 
@@ -102,9 +87,6 @@ class ReviewRepository:
         review: Instância de BaseReviewModel.
 
         Returns: Entrada criada no banco de dados, do tipo ReviewSchema.
-
-        Raises:
-
         """
         new_review = ReviewSchema(**review.model_dump())
         session.add(new_review)

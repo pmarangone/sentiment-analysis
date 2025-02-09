@@ -1,5 +1,5 @@
 [project]
-name = "consumer"
+name = "sentiment-analysis-consumer"
 version = "0.1.0"
 description = "Consumer - Sentiment Analysis"
 readme = "README.md"
