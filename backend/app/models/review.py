@@ -1,3 +1,4 @@
+from datetime import date
 import uuid
 from pydantic import BaseModel, Field
 
@@ -12,7 +13,7 @@ class BaseReviewModel(BaseModel):
     """
 
     customer_name: str = Field(...)
-    review_date: str = Field(...)
+    review_date: date = Field(...)
     review_data: str = Field(...)
 
 
@@ -32,4 +33,7 @@ class ReviewModel(BaseReviewModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     classification: str = Field(...)
     classified: bool = Field(...)
-    classified_at: str = Field(...)
+    classified_at: date = Field(...)
+    pos_score: float = Field(...)
+    neg_score: float = Field(...)
+    neu_score: float = Field(...)
