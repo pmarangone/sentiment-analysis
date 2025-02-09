@@ -26,10 +26,10 @@ class ReviewModel(BaseReviewModel):
     review_data: Avaliação feita pelo usuário.
     classification: Predição feita pelo modelo.
     classified: Valor booleano usado para desambiguar quais avaliações foram preditas.
-    classifiedAt: Data mais recente da predição.
+    classified_at: Data mais recente da predição.
     """
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     classification: str = Field(...)
     classified: bool = Field(...)
-    # classifiedAt: str = Field(...)
+    classified_at: str = Field(...)

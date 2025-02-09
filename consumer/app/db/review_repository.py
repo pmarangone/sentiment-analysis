@@ -21,8 +21,6 @@ class ReviewRepository:
         """
         logger.info("Creating database connection")
 
-        # TODO: handle the database connection properly
-        # do not initialize it if create_engine fails
         self.engine = create_engine(url)
         self.sessionmaker = sessionmaker(
             autocommit=False, autoflush=False, bind=self.engine
@@ -33,24 +31,20 @@ class ReviewRepository:
         logger.info("Creating database schemas")
         Base.metadata.create_all(bind=self.engine)
 
-    def update_review(self, session, review_id: str, classification):
+    def update_review(self, session, review_id: str):
         """Atualiza a classificação de uma avaliação no banco de dados.
 
         Args:
             session: Instância de sqlalchemy.orm.sessionmaker, responsável por gerenciar uma sessão
             do banco de dados.
             review_id: ID da avaliação.
-            classification: Classificação referente a avaliação.
         """
-        review: ReviewSchema = (
+        return (
             session.query(ReviewSchema)
             .with_for_update()
             .filter_by(id=review_id)
             .first()
         )
-
-        review.classification = classification
-        review.classified = True
 
 
 review_repository = ReviewRepository(DATABASE_URL)

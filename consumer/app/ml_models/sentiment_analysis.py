@@ -20,10 +20,7 @@ class SentimentAnalysisModel:
         Returns:
             str: Classificação do sentimento, exemplo: 'POS', 'NEG' ou 'NEU'.
         """
-        model_output = self.analyzer.predict(sentence)
-        print("model output", model_output)
-        prediction = model_output.output
-        return prediction
+        return self.analyzer.predict(sentence)
 
 
 analyzer = SentimentAnalysisModel()

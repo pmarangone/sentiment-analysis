@@ -73,8 +73,6 @@ class ReviewRepository:
         """
         return session.query(ReviewSchema).filter_by(id=review_id).first()
 
-    # TODO: follow ORM pattern everywhere, replace by any database supported by
-    # sqlalchemy
     def get_classification_count(self, session, start_date, end_date):
         """Conta todas avaliações, com predição, que foram feitas entre data inicial e data final.
 
@@ -93,22 +91,9 @@ class ReviewRepository:
         GROUP BY classification;
         """)
 
-        result = session.execute(
+        return session.execute(
             query, {"start_date": start_date, "end_date": end_date}
         ).fetchall()
-
-        # TODO: this should not be here, move it to core.
-        classification_mapping = {"POS": 0, "NEG": 0, "NEU": 0}
-        for classification, count in result:
-            classification_mapping[classification] = count
-
-        report = {
-            "positiva": classification_mapping["POS"],
-            "negativa": classification_mapping["NEG"],
-            "neutra": classification_mapping["NEU"],
-        }
-
-        return report
 
     def create_review(self, session, review: BaseReviewModel) -> ReviewSchema:
         """Cria uma nova entrada no banco de dados.

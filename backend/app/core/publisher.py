@@ -17,7 +17,6 @@ class RabbitMQPool:
     async def init_pool(self):
         """Inicializa a conexão com RabbitMQ e uma pool de conexões."""
 
-        # TODO: handle error if connection fails
         async def get_connection() -> AbstractRobustConnection:
             return await aio_pika.connect_robust(self.uri)
 
@@ -37,10 +36,10 @@ class RabbitMQPool:
         self, message_body: str, queue_name: str = "sentiment_analysis_queue"
     ):
         """Publica uma mensagem para a fila especificada do RabbitMQ
-        
+
         Args:
         message_body: O corpo da mensagem a ser enviada para a fila.
-        
+
         Raises:
         RuntimeError: Caso não exista uma conexão ativa ou um canal ativo para a pool.
         """
@@ -50,7 +49,6 @@ class RabbitMQPool:
                 "RabbitMQ pools are not initialized. Call init_pool() first."
             )
 
-        # TODO: handle error, raise custom exception
         async with self.channel_pool.acquire() as channel:
             await channel.default_exchange.publish(
                 aio_pika.Message(body=message_body.encode()),

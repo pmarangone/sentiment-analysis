@@ -1,6 +1,6 @@
 import base64
 import json
-
+from datetime import datetime
 from aio_pika import IncomingMessage
 
 from app.ml_models.sentiment_analysis import analyzer
@@ -28,20 +28,34 @@ async def predict_sentiment(message: IncomingMessage):
 
         review_id = message_data["review_id"]
         review_bytes = message_data["review_bytes"]
-        review = base64.b64decode(review_bytes).decode("utf-8")
+        review_sentence = base64.b64decode(review_bytes).decode("utf-8")
 
-        print("review", review)
+        print("review", review_sentence)
 
-        transcription = analyzer.predict(review)
+        today = datetime.today().strftime("%Y-%m-%d")
+
+        prediction = analyzer.predict(review_sentence)
 
         with review_repository.sessionmaker() as session:
-            review_repository.update_review(session, review_id, transcription)
-            session.commit()
+            review = review_repository.update_review(session, review_id)
 
-        logger.info(f"Task {review_id} completed successfully.")
+            if review:
+                review.classification = prediction.output
+                review.pos_score = round(prediction.probas["POS"], 3)
+                review.neg_score = round(prediction.probas["NEG"], 3)
+                review.neu_score = round(prediction.probas["NEU"], 3)
+                review.classified_at = today
+                review.classified = True
+
+                session.commit()
+
+            else:
+                logger.warning(f"Review with id {review_id} not found")
+
+        logger.info(f"Prediction for id {review_id} completed successfully.")
 
     except Exception as exc:
-        logger.error(f"Task failed: {exc}")
+        logger.error(f"Prediction failed: {exc}")
 
         headers = message.headers or {}
         retry_count = headers.get("x-retry-count", 0)
