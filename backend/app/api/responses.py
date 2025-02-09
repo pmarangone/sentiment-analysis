@@ -42,7 +42,7 @@ def not_allowed(body):
     return general_response(body, fastapi.status.HTTP_403_FORBIDDEN)
 
 
-def not_found(body):
+def not_found(body=None):
     return general_response(body, fastapi.status.HTTP_404_NOT_FOUND)
 
 
