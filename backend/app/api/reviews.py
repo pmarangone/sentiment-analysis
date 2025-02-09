@@ -22,6 +22,11 @@ reviews_router = APIRouter(prefix="/reviews")
 
 @reviews_router.get("/")
 async def get_reviews(request: Request):
+    """Retorna todas as avaliações.
+
+    Args:
+    request: Instância de fastapi.Request
+    """
     return core_get_reviews(request)
 
 
@@ -31,14 +36,17 @@ async def post_review(request: Request, review: BaseReviewModel):
     no banco de dados para o consumidor.
 
     Args:
-    request: Instância de fastapi.Request
-    review: Instância derivada de pydantic.BaseModel, que foi enviado no corpo da requisição.
-    Corpo da mensagem esperada:
+    request: Instância de fastapi.Request.
+    review: Instância de BaseReviewModel.
+    Corpo da requisição esperado:
     {
-        "customer_name": "Name",
+        "customer_name": "Nome",
         "review_date": "2025-01-01",
-        "review_data": "CustomerReviewHere"
+        "review_data": "Avaliação"
     }
+
+    Returns:
+    A entrada do usuário tal como foi criada no banco de dados.
     """
     return await core_create_review(request, review)
 
@@ -49,17 +57,29 @@ async def get_reviews_report(
     start_date: Annotated[str, Query()],
     end_date: Annotated[str, Query()],
 ):
-    """Gera um relatório do número de avaliações positivas, negativas ou neutras
-    feitas entre a data inicial e a data final (inclusiva).
+    """Gera um relatório do número de avaliações classificadas como positivas, negativas ou neutras
+    entre as datas fornecidas (inclusiva).
 
     Args:
-    request: Instância de fastapi.Request
-    start_date: Query com a data inicial da busca, ex: 2025-01-01
-    end_date: Query com a data final da busca, ex: 2025-01-10
+    request: Instância de fastapi.Request.
+    start_date: A data inicial da busca.
+    end_date: A data final da busca.
+
+    Returns:
+    Lista, do tipo Json, com todas as avaliações feitas entre a data inicial e data final.
     """
     return core_get_classification_count(request, start_date, end_date)
 
 
 @reviews_router.get("/{id}")
 async def get_review_by_id(request: Request, id: uuid.UUID):
+    """Retorna a avaliação referente ao ID, caso exista.
+
+    Args:
+    request: Instância de fastapi.Request.
+    id: Instância uuid.UUID referente a avaliação.
+
+    Returns:
+    A avaliação referente ao ID ou retorna um erro.
+    """
     return core_get_review_by_id(request, id)
