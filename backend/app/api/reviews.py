@@ -8,11 +8,12 @@ from fastapi import (
 
 from app.core.core import (
     core_create_review,
+    core_create_review_celery,
     core_get_review_by_id,
     core_get_reviews,
     core_get_classification_count,
 )
-from app.models.review import BaseReviewModel
+from app.models.review import RequestReviewModel
 from app.utils.logger import get_logger
 
 
@@ -31,13 +32,13 @@ async def get_reviews(request: Request):
 
 
 @reviews_router.post("/")
-async def post_review(request: Request, review: BaseReviewModel):
+async def post_review(request: Request, review: RequestReviewModel):
     """Cria a avaliação no banco de dados e envia a avaliação e o ID da entrada
     no banco de dados para o consumidor.
 
     Args:
     request: Instância de fastapi.Request.
-    review: Instância de BaseReviewModel.
+    review: Instância de RequestReviewModel.
     Corpo da requisição esperado:
     {
         "customer_name": "Nome",
@@ -49,6 +50,27 @@ async def post_review(request: Request, review: BaseReviewModel):
     A entrada do usuário tal como foi criada no banco de dados.
     """
     return await core_create_review(request, review)
+
+
+@reviews_router.post("/celery")
+async def post_review_celery(request: Request, review: RequestReviewModel):
+    """Cria a avaliação no banco de dados e envia a avaliação e o ID da entrada
+    no banco de dados para o consumidor.
+
+    Args:
+    request: Instância de fastapi.Request.
+    review: Instância de RequestReviewModel.
+    Corpo da requisição esperado:
+    {
+        "customer_name": "Nome",
+        "review_date": "2025-01-01",
+        "review_data": "Avaliação"
+    }
+
+    Returns:
+    A entrada do usuário tal como foi criada no banco de dados.
+    """
+    return await core_create_review_celery(request, review)
 
 
 @reviews_router.get("/report")

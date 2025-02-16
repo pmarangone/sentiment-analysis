@@ -1,9 +1,24 @@
 from datetime import date
 import uuid
 from pydantic import BaseModel, Field
+from typing import Optional, Dict
 
 
-class BaseReviewModel(BaseModel):
+class CreateReviewModel(BaseModel):
+    """Modelo base para a criação de uma avaliação.
+
+    Attributes:
+    customer_id: ID do usuário que fez a avaliação.
+    review_date: Data na qual o usuário fez a avaliação.
+    review_data: Avaliação feita pelo usuário.
+    """
+
+    customer_id: uuid.UUID = Field(...)
+    review_date: date = Field(...)
+    review_data: str = Field(...)
+
+
+class RequestReviewModel(BaseModel):
     """Modelo base para a criação de uma avaliação.
 
     Attributes:
@@ -17,23 +32,20 @@ class BaseReviewModel(BaseModel):
     review_data: str = Field(...)
 
 
-class ReviewModel(BaseReviewModel):
+class ReviewModel(RequestReviewModel):
     """Modelo de avaliação guardada no banco de dados.
 
     Attributes:
     id: uuid.UUID, gerado pelo banco de dados.
-    customer_name: Nome do usuário.
-    review_date: Data na qual o usuário fez a avaliação.
-    review_data: Avaliação feita pelo usuário.
     classification: Predição feita pelo modelo.
-    classified: Valor booleano usado para desambiguar quais avaliações foram preditas.
     classified_at: Data mais recente da predição.
+    sentiment_scores: Dicionário contendo as pontuações de sentimento (positivo, negativo, neutro).
     """
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    classification: str = Field(...)
-    classified: bool = Field(...)
-    classified_at: date = Field(...)
-    pos_score: float = Field(...)
-    neg_score: float = Field(...)
-    neu_score: float = Field(...)
+    customer_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    review_date: Optional[date] = Field(None)
+    review_data: Optional[str] = Field(None)
+    classification: Optional[str] = Field(None)
+    classified_at: Optional[date] = Field(None)
+    sentiment_scores: Optional[Dict[str, float]] = Field(None)

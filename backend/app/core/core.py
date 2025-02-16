@@ -2,9 +2,10 @@ import base64
 import json
 import uuid
 from fastapi import Request
+from app import celery_app
 from app.api.responses import OK, created, not_found, server_error, success
-from app.db.review_repository import ReviewRepository
-from app.models.review import BaseReviewModel
+from app.db import ReviewRepository, CustomerRepository
+from app.models.review import CreateReviewModel, RequestReviewModel
 from app.utils.logger import get_logger
 
 from .publisher import RabbitMQPool
@@ -12,7 +13,7 @@ from .publisher import RabbitMQPool
 logger = get_logger(__name__)
 
 
-async def core_create_review(request: Request, review: BaseReviewModel):
+async def core_create_review(request: Request, review: RequestReviewModel):
     """Cria a avaliação no banco de dados e envia a avaliação e o ID da entrada
     no banco de dados para o consumidor.
 
@@ -43,6 +44,62 @@ async def core_create_review(request: Request, review: BaseReviewModel):
 
         await rabbitmq_pool.publish_message(json.dumps(message))
 
+        return created(created_review)
+
+    except Exception as exc:
+        error = str(exc)
+        logger.error(f"Error while creating review: {error}")
+        return server_error(error)
+
+
+async def core_create_review_celery(request: Request, review: RequestReviewModel):
+    """Cria a avaliação no banco de dados e envia a avaliação e o ID da entrada
+    no banco de dados para o consumidor.
+
+    Args:
+    request: Instância de fastapi.Request
+    review: Instância derivada de pydantic.BaseModel, que foi enviado no corpo da requisição.
+
+    Returns:
+    criada: A entrada do usuário tal como foi criada no banco de dados.
+    erro_servidor: Mensagem de erro, seja em criar a entrada no banco de dados ou em enviar a mensagem para
+    o consumidor.
+    """
+    try:
+        review_repository: ReviewRepository = request.app.state.review_repository
+        customer_repository: CustomerRepository = request.app.state.customer_repository
+        # rabbitmq_pool: RabbitMQPool = request.app.state.rabbitmq_pool
+
+        with review_repository.sessionmaker() as session:
+            customer = customer_repository.get_customer_by_name(
+                session, review.customer_name
+            )
+            if not customer:
+                customer = customer_repository.create_customer(
+                    session, review.customer_name
+                )
+                session.commit()
+                session.refresh(customer)
+
+            review = CreateReviewModel(
+                customer_id=customer.id,
+                review_date=review.review_date,
+                review_data=review.review_data,
+            )
+            created_review = review_repository.create_review(session, review)
+            session.commit()
+            session.refresh(created_review)
+
+        message = {
+            "review_id": str(created_review.id),
+            "review_bytes": base64.b64encode(
+                created_review.review_data.encode()
+            ).decode("utf-8"),
+        }
+
+        json_data = json.dumps(message)
+
+        _task = celery_app.send_task("worker2.process_data", args=[json_data])
         return created(created_review)
 
     except Exception as exc:

@@ -3,7 +3,8 @@ from sqlalchemy.orm import sessionmaker
 
 from app.db.schemas import Base
 from app.db.schemas.review import ReviewSchema
-from app.models.review import BaseReviewModel, ReviewModel
+
+from app.models.review import CreateReviewModel
 from app.utils import get_logger
 
 logger = get_logger(__name__)
@@ -80,7 +81,7 @@ class ReviewRepository:
             query, {"start_date": start_date, "end_date": end_date}
         ).fetchall()
 
-    def create_review(self, session, review: BaseReviewModel) -> ReviewSchema:
+    def create_review(self, session, review: CreateReviewModel) -> ReviewSchema:
         """Cria uma nova entrada no banco de dados.
 
         Args:
