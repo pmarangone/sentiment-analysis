@@ -22,12 +22,8 @@ from app.db import ReviewRepository
 from app.db import CustomerRepository
 from app.utils import get_logger
 from app.config import DATABASE_URL, POOL_SIZE
-from app.prometheus import (
-    REQUEST_COUNT,
-    REQUEST_IN_PROGRESS,
-    REQUEST_LATENCY,
-    update_system_metrics,
-)
+from prometheus_client import make_asgi_app
+
 
 logger = get_logger(__name__)
 
@@ -53,23 +49,25 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Sentiment Analysis", lifespan=lifespan)
 
 
-@app.middleware("http")
-async def monitor_requests(request: Request, call_next):
-    method = request.method
-    path = request.url.path
+# @app.middleware("http")
+# async def monitor_requests(request: Request, call_next):
+#     # method = request.method
+#     # path = request.url.path
 
-    REQUEST_IN_PROGRESS.labels(method=method, path=path).inc()
+#     # REQUEST_IN_PROGRESS.labels(method=method, path=path).inc()
 
-    start_time = time.time()
-    response = await call_next(request)
-    duration = time.time() - start_time
+#     # start_time = time.time()
 
-    status = response.status_code
-    REQUEST_COUNT.labels(method=method, status=status, path=path).inc()
-    REQUEST_LATENCY.labels(method=method, status=status, path=path).observe(duration)
-    REQUEST_IN_PROGRESS.labels(method=method, path=path).dec()
+#     response = await call_next(request)
 
-    return response
+#     # duration = time.time() - start_time
+
+#     # status = response.status_code
+#     # REQUEST_COUNT.labels(method=method, status=status, path=path).inc()
+#     # REQUEST_LATENCY.labels(method=method, status=status, path=path).observe(duration)
+#     # REQUEST_IN_PROGRESS.labels(method=method, path=path).dec()
+
+#     return response
 
 
 app.add_middleware(
@@ -84,7 +82,5 @@ app.add_middleware(
 app.include_router(reviews_router)
 
 
-@app.get("/metrics")
-async def metrics():
-    update_system_metrics()
-    return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)

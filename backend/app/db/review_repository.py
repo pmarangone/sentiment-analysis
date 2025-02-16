@@ -71,10 +71,10 @@ class ReviewRepository:
         Returns: Relatório com contagem das avaliações classificadas como positiva, negativa ou neutra.
         """
         query = text("""
-        SELECT classification, COUNT(*) FROM reviews 
-        WHERE classified = true
-        AND review_date BETWEEN :start_date AND :end_date 
-        GROUP BY classification;
+            SELECT classification, COUNT(*) FROM reviews 
+            WHERE classified_at IS NOT NULL
+            AND review_date BETWEEN :start_date AND :end_date 
+            GROUP BY classification;
         """)
 
         return session.execute(

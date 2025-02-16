@@ -99,7 +99,9 @@ async def core_create_review_celery(request: Request, review: RequestReviewModel
 
         json_data = json.dumps(message)
 
-        _task = celery_app.send_task("worker2.process_data", args=[json_data])
+        _task = celery_app.send_task(
+            "sentiment-analysis-consumer", args=[json_data], queue="sentiment-analysis"
+        )
         return created(created_review)
 
     except Exception as exc:
@@ -180,14 +182,16 @@ def core_get_classification_count(request: Request, start_date, end_date):
         with repository.sessionmaker() as session:
             result = repository.get_classification_count(session, start_date, end_date)
 
-        classification_mapping = {"POS": 0, "NEG": 0, "NEU": 0}
+        print(result)
+
+        classification_mapping = {"positive": 0, "negative": 0, "neutral": 0}
         for classification, count in result:
             classification_mapping[classification] = count
 
         report = {
-            "positiva": classification_mapping["POS"],
-            "negativa": classification_mapping["NEG"],
-            "neutra": classification_mapping["NEU"],
+            "positiva": classification_mapping["positive"],
+            "negativa": classification_mapping["negative"],
+            "neutra": classification_mapping["neutral"],
         }
 
         if report:

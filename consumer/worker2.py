@@ -12,15 +12,37 @@ from app.ml_models.sentiment_analysis import analyzer
 from app.utils.logger import get_logger
 from app.db.review_repository import review_repository
 
-# Configure Celery to use RabbitMQ as a broker
-celery = Celery("tasks", broker=RABBITMQ_URI, backend="rpc://")
 
+class CeleryConfig:
+    # Define the queue name
+    QUEUE_NAME = "sentiment-analysis"  # Queue for sentiment analysis tasks
+
+    # Celery configuration settings
+    CELERY_BROKER_URL = RABBITMQ_URI
+    CELERY_RESULT_BACKEND = "rpc://"
+    CELERY_TASK_DEFAULT_QUEUE = QUEUE_NAME
+    CELERY_TASK_ROUTES = {
+        "app.tasks.sentiment-analysis-consumer": {"queue": QUEUE_NAME},
+    }
+
+
+# Initialize Celery app
+celery_app = Celery("tasks", broker=RABBITMQ_URI, backend="rpc://")
+
+# Apply the configuration to the Celery app
+celery_app.config_from_object(CeleryConfig)
 
 logger = get_logger(__name__)
 
 
-@celery.task
-def process_data(message):
+@celery_app.task(
+    bind=True,
+    name="sentiment-analysis-consumer",
+    queue="sentiment-analysis",
+    default_retry_delay=30 * 60,  # Retry after 30 minutes if the task fails
+    max_retries=3,  # Maximum number of retries
+)
+def process_data(self, message):
     try:
         message_data = json.loads(message)
         review_id = message_data["review_id"]
@@ -63,3 +85,4 @@ def process_data(message):
     except Exception as exc:
         error = str(exc)
         logger.error(f"Error occurred: {error}")
+        self.retry(exc=exc)
