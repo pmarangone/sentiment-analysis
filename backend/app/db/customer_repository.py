@@ -15,20 +15,20 @@ class CustomerRepository:
         Args:
         url: URL para a conexão com o banco de dados.
         """
-        logger.info("Creating database connection")
-        try:
-            self.engine = create_engine(url)
-            self.sessionmaker = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
-            )
-        except Exception as exc:
-            logger.error(f"Error occurred: {str(exc)}")
-            raise exc
+        # logger.info("Creating database connection")
+        # try:
+        #     self.engine = create_engine(url)
+        #     self.sessionmaker = sessionmaker(
+        #         autocommit=False, autoflush=False, bind=self.engine
+        #     )
+        # except Exception as exc:
+        #     logger.error(f"Error occurred: {str(exc)}")
+        #     raise exc
 
-    def initialize_schema(self):
+    def initialize_schema(self, engine):
         """Inicializa as tabelas no banco de dados."""
         logger.info("Creating database schemas")
-        Base.metadata.create_all(bind=self.engine)
+        Base.metadata.create_all(bind=engine)
 
     def get_customers(self, session):
         """Busca todos os clientes no banco de dados."""

@@ -28,25 +28,25 @@ from prometheus_client import make_asgi_app
 logger = get_logger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Inicializa ReviewRepository e RabbitMQPool, guardando as instâncias no estado da aplicação para
-    serem reutilizadas a cada request. Dessa forma, segue-se o Singleton Pattern"""
-    app.state.review_repository = ReviewRepository(DATABASE_URL)
-    app.state.review_repository.initialize_schema()
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     """Inicializa ReviewRepository e RabbitMQPool, guardando as instâncias no estado da aplicação para
+#     serem reutilizadas a cada request. Dessa forma, segue-se o Singleton Pattern"""
+#     app.state.review_repository = ReviewRepository(DATABASE_URL)
+#     app.state.review_repository.initialize_schema()
 
-    app.state.customer_repository = CustomerRepository(DATABASE_URL)
-    app.state.customer_repository.initialize_schema()
+#     app.state.customer_repository = CustomerRepository(DATABASE_URL)
+#     app.state.customer_repository.initialize_schema()
 
-    app.state.rabbitmq_pool = RabbitMQPool(pool_size=int(POOL_SIZE))
-    await app.state.rabbitmq_pool.init_pool()
+#     app.state.rabbitmq_pool = RabbitMQPool(pool_size=int(POOL_SIZE))
+#     await app.state.rabbitmq_pool.init_pool()
 
-    yield
+#     yield
 
-    logger.info("Application shutdown")
+#     logger.info("Application shutdown")
 
 
-app = FastAPI(title="Sentiment Analysis", lifespan=lifespan)
+app = FastAPI(title="Sentiment Analysis")
 
 
 # @app.middleware("http")

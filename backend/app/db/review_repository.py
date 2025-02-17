@@ -22,21 +22,21 @@ class ReviewRepository:
         """
         logger.info("Creating database connection")
 
-        try:
-            self.engine = create_engine(url)
-            self.sessionmaker = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
-            )
+        # try:
+        #     self.engine = create_engine(url)
+        #     self.sessionmaker = sessionmaker(
+        #         autocommit=False, autoflush=False, bind=self.engine
+        #     )
 
-        except Exception as exc:
-            error = str(exc)
-            logger.error(f"Error occurred: {error}")
-            raise error
+        # except Exception as exc:
+        #     error = str(exc)
+        #     logger.error(f"Error occurred: {error}")
+        #     raise error
 
-    def initialize_schema(self):
+    def initialize_schema(self, engine):
         """Inicializa as tabelas no banco de dados."""
         logger.info("Creating database schemas")
-        Base.metadata.create_all(bind=self.engine)
+        Base.metadata.create_all(bind=engine)
 
     def get_reviews(self, session):
         """Busca todas as avaliações no banco de dados.
