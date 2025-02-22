@@ -3,7 +3,8 @@ from sqlalchemy.orm import sessionmaker
 
 from app.db.schemas import Base
 from app.db.schemas.review import ReviewSchema
-from app.models.review import BaseReviewModel, ReviewModel
+
+from app.models.review import CreateReviewModel
 from app.utils import get_logger
 
 logger = get_logger(__name__)
@@ -21,21 +22,21 @@ class ReviewRepository:
         """
         logger.info("Creating database connection")
 
-        try:
-            self.engine = create_engine(url)
-            self.sessionmaker = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
-            )
+        # try:
+        #     self.engine = create_engine(url)
+        #     self.sessionmaker = sessionmaker(
+        #         autocommit=False, autoflush=False, bind=self.engine
+        #     )
 
-        except Exception as exc:
-            error = str(exc)
-            logger.error(f"Error occurred: {error}")
-            raise error
+        # except Exception as exc:
+        #     error = str(exc)
+        #     logger.error(f"Error occurred: {error}")
+        #     raise error
 
-    def initialize_schema(self):
+    def initialize_schema(self, engine):
         """Inicializa as tabelas no banco de dados."""
         logger.info("Creating database schemas")
-        Base.metadata.create_all(bind=self.engine)
+        Base.metadata.create_all(bind=engine)
 
     def get_reviews(self, session):
         """Busca todas as avaliações no banco de dados.
@@ -70,17 +71,17 @@ class ReviewRepository:
         Returns: Relatório com contagem das avaliações classificadas como positiva, negativa ou neutra.
         """
         query = text("""
-        SELECT classification, COUNT(*) FROM reviews 
-        WHERE classified = true
-        AND review_date BETWEEN :start_date AND :end_date 
-        GROUP BY classification;
+            SELECT classification, COUNT(*) FROM reviews 
+            WHERE classified_at IS NOT NULL
+            AND review_date BETWEEN :start_date AND :end_date 
+            GROUP BY classification;
         """)
 
         return session.execute(
             query, {"start_date": start_date, "end_date": end_date}
         ).fetchall()
 
-    def create_review(self, session, review: BaseReviewModel) -> ReviewSchema:
+    def create_review(self, session, review: CreateReviewModel) -> ReviewSchema:
         """Cria uma nova entrada no banco de dados.
 
         Args:

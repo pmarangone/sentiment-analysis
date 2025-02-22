@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, exc
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.config import DATABASE_URL
@@ -48,3 +48,4 @@ class ReviewRepository:
 
 
 review_repository = ReviewRepository(DATABASE_URL)
+review_repository.initialize_schema()
