@@ -131,6 +131,18 @@ async def core_get_reviews(
         return server_error(error)
 
 
+def core_generate_report(data):
+    classification_mapping = {"positive": 0, "negative": 0, "neutral": 0}
+    for classification, count in data:
+        classification_mapping[classification] = count
+
+    return {
+        "positiva": classification_mapping["positive"],
+        "negativa": classification_mapping["negative"],
+        "neutra": classification_mapping["neutral"],
+    }
+
+
 async def core_get_classification_count(db_session: Session, start_date, end_date):
     """Gera um relatório do número de avaliações positivas, negativas ou neutras
     feitas entre a data inicial e a data final (inclusiva).
@@ -150,18 +162,10 @@ async def core_get_classification_count(db_session: Session, start_date, end_dat
             db_session, start_date.date(), end_date.date()
         )
 
-        classification_mapping = {"positive": 0, "negative": 0, "neutral": 0}
-        for classification, count in result:
-            classification_mapping[classification] = count
-
-        report = {
-            "positiva": classification_mapping["positive"],
-            "negativa": classification_mapping["negative"],
-            "neutra": classification_mapping["neutral"],
-        }
-
-        if report:
+        if result:
+            report = core_generate_report(result)
             return success(report)
+
         return not_found()
 
     except Exception as exc:
