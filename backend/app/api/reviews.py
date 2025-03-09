@@ -9,11 +9,12 @@ from fastapi import (
 
 from app.core.core import (
     core_create_review_celery,
+    core_create_reviews_many,
     core_get_review_by_id,
     core_get_reviews,
     core_get_classification_count,
 )
-from app.models.review import RequestReviewModel
+from app.models.review import RequestReviewModel, RequestReviewsManyModel
 from app.utils.logger import get_logger
 
 from app.db.session import PostgresDep
@@ -56,6 +57,15 @@ async def post_review_celery(
     A entrada do usuário tal como foi criada no banco de dados.
     """
     return await core_create_review_celery(db_session, review)
+
+
+@reviews_router.post("/many")
+async def post_reviews_many(
+    request: Request,
+    reviews: RequestReviewsManyModel,
+    db_session: PostgresDep,
+):
+    return await core_create_reviews_many(db_session, reviews)
 
 
 @reviews_router.get("/report")

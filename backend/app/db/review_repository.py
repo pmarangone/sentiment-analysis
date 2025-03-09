@@ -52,3 +52,29 @@ class ReviewRepository:
         """
 
         return await session.fetch(query, start_date, end_date)
+
+    async def create_reviews_many(self, session, reviews):
+        values_placeholders = ", ".join(
+            f"(${i * 4 + 1}, ${i * 4 + 2}, ${i * 4 + 3}, ${i * 4 + 4})"
+            for i in range(len(reviews))
+        )
+        query = """
+            INSERT INTO reviews_partitioned (company_id, customer_id, review_date, review_data)
+            VALUES {}
+            RETURNING id, review_data;
+        """.format(values_placeholders)
+
+        flattened_values = []
+        for review in reviews:
+            flattened_values.extend(
+                [
+                    review.company_id,
+                    review.customer_id,
+                    review.review_date,
+                    review.review_data,
+                ]
+            )
+
+        print(flattened_values)
+
+        return await session.fetch(query, *flattened_values)

@@ -34,6 +34,11 @@ class RequestReviewModel(BaseModel):
     review_data: str = Field(...)
 
 
+class RequestReviewsManyModel(BaseModel):
+    company_id: str = Field(...)
+    reviews: list = Field(...)
+
+
 class ReviewModel(RequestReviewModel):
     """Modelo de avaliação guardada no banco de dados.
 

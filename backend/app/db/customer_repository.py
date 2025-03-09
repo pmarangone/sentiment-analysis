@@ -27,3 +27,19 @@ class CustomerRepository:
     ) -> asyncpg.Record | None:
         query = "INSERT INTO customers (name) VALUES ($1) RETURNING *"
         return await session.fetchrow(query, customer_name)
+
+    async def insert_many(self, session, customers):
+        values_placeholders = ", ".join(f"(${i + 1})" for i in range(len(customers)))
+        query = """
+            WITH ins AS (
+                INSERT INTO customers (name)
+                VALUES {}
+                ON CONFLICT (name) DO NOTHING
+                RETURNING id, name
+            )
+            SELECT id, name FROM ins
+            UNION ALL
+            SELECT id, name FROM customers WHERE name = ANY(${})
+        """.format(values_placeholders, len(customers) + 1)
+
+        return await session.fetch(query, *customers, customers)

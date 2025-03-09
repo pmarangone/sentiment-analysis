@@ -18,6 +18,69 @@ customer_repository = CustomerRepository()
 logger = get_logger(__name__)
 
 
+async def check_customer_exists(db_session, customer_name):
+    row = await customer_repository.get_customer_by_name(db_session, customer_name)
+    if not row:
+        row = await customer_repository.create_customer(db_session, customer_name)
+
+        if not row:
+            raise Exception("Customer was not")
+
+    return Customer(**dict(row))
+
+
+async def core_create_reviews_many(
+    db_session: Session,
+    reviews: RequestReviewModel,
+):
+    try:
+        result = await customer_repository.insert_many(
+            db_session, [review["customer_name"] for review in reviews.reviews]
+        )
+
+        customer_map = {row["name"]: row["id"] for row in result}
+
+        reviews = [
+            CreateReviewModel(
+                company_id=reviews.company_id,
+                customer_id=customer_map[review["customer_name"]],
+                review_date=review["review_date"],
+                review_data=review["review_data"],
+            )
+            for review in reviews.reviews
+        ]
+
+        rows = await review_repository.create_reviews_many(db_session, reviews)
+        created_reviews = [ReviewSchema(**dict(row)) for row in rows]
+
+        logger.info(f"Created {len(created_reviews)} reviews")
+
+        message = [
+            {
+                "review_id": str(created.id),
+                "review_bytes": base64.b64encode(created.review_data.encode()).decode(
+                    "utf-8"
+                ),
+            }
+            for created in created_reviews
+        ]
+
+        json_data = json.dumps(message)
+
+        _task = celery_app.send_task(
+            "sentiment-analysis-consumer-many",
+            args=[json_data],
+            queue="sentiment-analysis-many",
+        )
+
+        return created(created_reviews)
+
+    except Exception as exc:
+        error = str(exc)
+        logger.error(f"Error while creating review: {error}")
+        return server_error(error)
+
+
 async def core_create_review_celery(
     db_session: Session,
     review: RequestReviewModel,
@@ -35,18 +98,7 @@ async def core_create_review_celery(
     o consumidor.
     """
     try:
-        row = await customer_repository.get_customer_by_name(
-            db_session, review.customer_name
-        )
-        if not row:
-            row = await customer_repository.create_customer(
-                db_session, review.customer_name
-            )
-
-            if not row:
-                raise Exception("Customer was not")
-
-        customer = Customer(**dict(row))
+        customer = check_customer_exists(db_session, review.customer_name)
 
         review = CreateReviewModel(
             company_id=review.company_id,
