@@ -51,6 +51,7 @@ async def core_create_review_celery(
         customer = Customer(**dict(row))
 
         review = CreateReviewModel(
+            company_id=review.company_id,
             customer_id=customer.id,
             review_date=review.review_date,
             review_data=review.review_data,
@@ -132,14 +133,14 @@ async def core_get_reviews(
 
 
 def core_generate_report(data):
-    classification_mapping = {"positive": 0, "negative": 0, "neutral": 0}
+    classification_mapping = {"POS": 0, "NEG": 0, "NEU": 0}
     for classification, count in data:
         classification_mapping[classification] = count
 
     return {
-        "positiva": classification_mapping["positive"],
-        "negativa": classification_mapping["negative"],
-        "neutra": classification_mapping["neutral"],
+        "positiva": classification_mapping["POS"],
+        "negativa": classification_mapping["NEG"],
+        "neutra": classification_mapping["NEU"],
     }
 
 

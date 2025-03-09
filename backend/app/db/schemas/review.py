@@ -35,10 +35,15 @@ class ReviewSchema(Base):
         ForeignKey("customers.id", ondelete="CASCADE"),
         nullable=False,
     )
+    company_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("companies.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     review_date = Column(Date, nullable=False)
     review_data = Column(String, nullable=False)
     classification = Column(
-        ENUM("positive", "negative", "neutral", name="classification_enum"),
+        ENUM("POS", "NEG", "NEU", name="classification_enum"),
         nullable=True,
     )
     classified_at = Column(Date, nullable=True)
