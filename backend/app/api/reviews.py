@@ -3,7 +3,6 @@ from typing import Annotated
 import uuid
 from fastapi import (
     APIRouter,
-    Depends,
     Query,
     Request,
 )

@@ -1,9 +1,6 @@
 from typing import List
 import asyncpg
-from sqlalchemy import text
 
-from app.db.schemas import Base
-from app.db.schemas.review import ReviewSchema
 
 from app.models.review import CreateReviewModel
 from app.utils import get_logger

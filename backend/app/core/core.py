@@ -1,8 +1,6 @@
 import base64
-from datetime import datetime
 import json
 import uuid
-from fastapi import Request
 from sqlalchemy.orm import Session
 
 from app import celery_app

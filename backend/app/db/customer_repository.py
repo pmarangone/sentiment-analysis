@@ -1,8 +1,6 @@
 from typing import List
 
 import asyncpg
-from app.db.schemas import Base
-from app.db.schemas.customer import Customer
 from app.utils import get_logger
 
 logger = get_logger(__name__)
