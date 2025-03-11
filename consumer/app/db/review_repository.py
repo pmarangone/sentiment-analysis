@@ -5,6 +5,7 @@ from app.config import DATABASE_URL
 from app.db.schemas import Base
 from app.db.schemas.review import ReviewSchema
 from app.utils.logger import get_logger
+# from app.models.review import ReviewModel
 
 logger = get_logger(__name__)
 
@@ -45,6 +46,9 @@ class ReviewRepository:
             .filter_by(id=review_id)
             .first()
         )
+
+    def bulk_update_reviews(self, session, reviews):
+        session.bulk_update_mappings(ReviewSchema, reviews)
 
 
 review_repository = ReviewRepository(DATABASE_URL)

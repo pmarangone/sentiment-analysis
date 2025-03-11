@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 import uuid
 
 from app.db.schemas.customer import Customer
+from app.db.schemas.company import CompanySchema
 
 from app.db.schemas import Base
 
@@ -33,12 +34,17 @@ class ReviewSchema(Base):
     neu_score: Refere-se ao valor de sentimento 'neutro' retornado na classificação mais recente.
     """
 
-    __tablename__ = "reviews"
+    __tablename__ = "reviews_partitioned"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_id = Column(
         UUID(as_uuid=True),
         ForeignKey("customers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    company_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("companies.id", ondelete="CASCADE"),
         nullable=False,
     )
     review_date = Column(Date, nullable=False)
@@ -51,3 +57,4 @@ class ReviewSchema(Base):
     sentiment_scores = Column(JSON, nullable=True)
 
     customer = relationship("Customer", back_populates="reviews")
+    company = relationship("CompanySchema", back_populates="reviews")
