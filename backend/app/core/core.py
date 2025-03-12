@@ -70,7 +70,7 @@ async def core_create_reviews_many(
         _task = celery_app.send_task(
             "sentiment-analysis-consumer-many",
             args=[json_data],
-            queue="sentiment-analysis-many",
+            queue="sentiment-analysis",
         )
 
         return created(created_reviews)
