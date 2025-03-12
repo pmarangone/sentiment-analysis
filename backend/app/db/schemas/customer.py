@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Date, ForeignKey, String, JSON
-from sqlalchemy.dialects.postgresql import UUID, ENUM
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
 

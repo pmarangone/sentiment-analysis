@@ -7,14 +7,12 @@ requires-python = ">=3.11"
 dependencies = [
     "uvicorn>=0.34.0",
     "fastapi>=0.115.6",
-    "sqlmodel>=0.0.22",
-    "aio-pika>=9.5.4",
-    "psycopg[binary]>=3.2.4",
-    "psycopg2-binary>=2.9.10",
     "prometheus-client>=0.21.1",
     "psutil>=6.1.1",
     "celery>=5.4.0",
     "alembic>=1.14.1",
+    "asyncpg>=0.30.0",
+    "psycopg2-binary>=2.9.10",
 ]
 
 [dependency-groups]

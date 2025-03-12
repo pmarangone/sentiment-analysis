@@ -1,51 +1,45 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.db.schemas import Base
-from app.db.schemas.customer import Customer
-from app.models.customer import CustomerModel
+from typing import List
+
+import asyncpg
 from app.utils import get_logger
 
 logger = get_logger(__name__)
 
 
 class CustomerRepository:
-    def __init__(self, url):
-        """Inicializa a conexão com o banco de dados e um gerador de sessões.
+    # TODO
+    # def initialize_schema(self, engine):
+    #     logger.info("Creating database schemas")
+    #     Base.metadata.create_all(bind=engine)
 
-        Args:
-        url: URL para a conexão com o banco de dados.
-        """
-        # logger.info("Creating database connection")
-        # try:
-        #     self.engine = create_engine(url)
-        #     self.sessionmaker = sessionmaker(
-        #         autocommit=False, autoflush=False, bind=self.engine
-        #     )
-        # except Exception as exc:
-        #     logger.error(f"Error occurred: {str(exc)}")
-        #     raise exc
+    async def get_customers(self, session) -> List[asyncpg.Record]:
+        query = "SELECT * FROM customers"
+        return await session.fetch(query)
 
-    def initialize_schema(self, engine):
-        """Inicializa as tabelas no banco de dados."""
-        logger.info("Creating database schemas")
-        Base.metadata.create_all(bind=engine)
+    async def get_customer_by_name(
+        self, session, customer_name: str
+    ) -> asyncpg.Record | None:
+        query = "SELECT * FROM customers WHERE name = $1"
+        return await session.fetchrow(query, customer_name)
 
-    def get_customers(self, session):
-        """Busca todos os clientes no banco de dados."""
-        return session.query(Customer).all()
+    async def create_customer(
+        self, session, customer_name: str
+    ) -> asyncpg.Record | None:
+        query = "INSERT INTO customers (name) VALUES ($1) RETURNING *"
+        return await session.fetchrow(query, customer_name)
 
-    def get_customer_by_name(self, session, customer_name: str) -> Customer:
-        """Busca um cliente pelo name."""
-        return session.query(Customer).filter_by(name=customer_name).first()
+    async def insert_many(self, session, customers):
+        values_placeholders = ", ".join(f"(${i + 1})" for i in range(len(customers)))
+        query = """
+            WITH ins AS (
+                INSERT INTO customers (name)
+                VALUES {}
+                ON CONFLICT (name) DO NOTHING
+                RETURNING id, name
+            )
+            SELECT id, name FROM ins
+            UNION ALL
+            SELECT id, name FROM customers WHERE name = ANY(${})
+        """.format(values_placeholders, len(customers) + 1)
 
-    def create_customer(self, session, customer: str) -> Customer:
-        """Cria um novo cliente no banco de dados."""
-        new_customer = Customer(name=customer)
-        session.add(new_customer)
-        return new_customer
-
-    # def get_customer_or_create(self, session, customer_name: str) -> Customer:
-    #     customer = self.get_customer_by_name(session, customer_name)
-    #     if customer:
-    #         return customer
-    #     new_customer = self.create_customer(sesison, customer=)
+        return await session.fetch(query, *customers, customers)

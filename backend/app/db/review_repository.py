@@ -1,8 +1,6 @@
-from sqlalchemy import create_engine, exc, text
-from sqlalchemy.orm import sessionmaker
+from typing import List
+import asyncpg
 
-from app.db.schemas import Base
-from app.db.schemas.review import ReviewSchema
 
 from app.models.review import CreateReviewModel
 from app.utils import get_logger
@@ -11,84 +9,72 @@ logger = get_logger(__name__)
 
 
 class ReviewRepository:
-    def __init__(self, url):
-        """Inicializa a conexão com o banco de dados e um gerador de sessões.
+    # TODO
+    # def initialize_schema(self, engine):
+    #     """Inicializa as tabelas no banco de dados."""
+    #     logger.info("Creating database schemas")
+    #     Base.metadata.create_all(bind=engine)
 
-        Args:
-        url: URL para a conexão com o banco de dados, ex: postgresql+psycopg://user:password@localhost/database
+    async def get_reviews(self, session, *args) -> List[asyncpg.Record]:
+        query = "SELECT * from reviews_partitioned"
+        row = await session.fetch(query, *args)
+        return row
 
-        Raises:
-        Exception: Caso a criação da conexão falhe
+    async def get_review_by_id(
+        self, session: asyncpg.Connection, review_id: str
+    ) -> asyncpg.Record | None:
+        query = "SELECT * FROM reviews_partitioned WHERE id = $1"
+        return await session.fetchrow(query, review_id)
+
+    async def create_review(
+        self, session: asyncpg.Connection, review: CreateReviewModel
+    ) -> asyncpg.Record | None:
+        query = """
+        INSERT INTO reviews_partitioned (
+           company_id, customer_id, review_date, review_data
+        ) VALUES ($1, $2, $3, $4)
+        RETURNING *;
         """
-        logger.info("Creating database connection")
+        return await session.fetchrow(
+            query,
+            review.company_id,
+            review.customer_id,
+            review.review_date,
+            review.review_data,
+        )
 
-        # try:
-        #     self.engine = create_engine(url)
-        #     self.sessionmaker = sessionmaker(
-        #         autocommit=False, autoflush=False, bind=self.engine
-        #     )
-
-        # except Exception as exc:
-        #     error = str(exc)
-        #     logger.error(f"Error occurred: {error}")
-        #     raise error
-
-    def initialize_schema(self, engine):
-        """Inicializa as tabelas no banco de dados."""
-        logger.info("Creating database schemas")
-        Base.metadata.create_all(bind=engine)
-
-    def get_reviews(self, session):
-        """Busca todas as avaliações no banco de dados.
-
-        Args:
-        session: Instância de sqlalchemy.orm.sessionmaker, responsável por gerenciar uma sessão
-        do banco de dados.
-
-        Returns: Todas as avaliações guardadas no banco de dados ou nenhum.
-        """
-        return session.query(ReviewSchema).all()
-
-    def get_review_by_id(self, session, review_id: str) -> ReviewSchema:
-        """Busca uma avaliação no banco de dados, filtrada por ID.
-
-        Args:
-        session: Instância de sqlalchemy.orm.sessionmaker, responsável por gerenciar uma sessão
-        do banco de dados.
-        review_id: uuid.UUID, o ID da avaliação.
-
-        Returns: Avaliação feita ou nenhum.
-        """
-        return session.query(ReviewSchema).filter_by(id=review_id).first()
-
-    def get_classification_count(self, session, start_date, end_date):
-        """Conta todas avaliações, com predição, que foram feitas entre data inicial e data final.
-
-        Args:
-        start_date: Data inicial da busca.
-        end_date: Data final da busca.
-
-        Returns: Relatório com contagem das avaliações classificadas como positiva, negativa ou neutra.
-        """
-        query = text("""
-            SELECT classification, COUNT(*) FROM reviews 
+    async def get_classification_count(self, session, start_date, end_date):
+        query = """
+            SELECT classification, COUNT(*) FROM reviews_partitioned 
             WHERE classified_at IS NOT NULL
-            AND review_date BETWEEN :start_date AND :end_date 
+            AND review_date BETWEEN $1 AND $2 
             GROUP BY classification;
-        """)
-
-        return session.execute(
-            query, {"start_date": start_date, "end_date": end_date}
-        ).fetchall()
-
-    def create_review(self, session, review: CreateReviewModel) -> ReviewSchema:
-        """Cria uma nova entrada no banco de dados.
-
-        Args:
-        review: Instância de BaseReviewModel.
-
-        Returns: Entrada criada no banco de dados, do tipo ReviewSchema.
         """
-        new_review = ReviewSchema(**review.model_dump())
-        session.add(new_review)
-        return new_review
+
+        return await session.fetch(query, start_date, end_date)
+
+    async def create_reviews_many(self, session, reviews):
+        values_placeholders = ", ".join(
+            f"(${i * 4 + 1}, ${i * 4 + 2}, ${i * 4 + 3}, ${i * 4 + 4})"
+            for i in range(len(reviews))
+        )
+        query = """
+            INSERT INTO reviews_partitioned (company_id, customer_id, review_date, review_data)
+            VALUES {}
+            RETURNING id, review_data;
+        """.format(values_placeholders)
+
+        flattened_values = []
+        for review in reviews:
+            flattened_values.extend(
+                [
+                    review.company_id,
+                    review.customer_id,
+                    review.review_date,
+                    review.review_data,
+                ]
+            )
+
+        print(flattened_values)
+
+        return await session.fetch(query, *flattened_values)

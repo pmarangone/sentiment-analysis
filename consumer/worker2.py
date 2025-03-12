@@ -23,6 +23,7 @@ class CeleryConfig:
     CELERY_TASK_DEFAULT_QUEUE = QUEUE_NAME
     CELERY_TASK_ROUTES = {
         "app.tasks.sentiment-analysis-consumer": {"queue": QUEUE_NAME},
+        "app.tasks.sentiment-analysis-consumer-many": {"queue": QUEUE_NAME},
     }
 
 
@@ -85,4 +86,58 @@ def process_data(self, message):
     except Exception as exc:
         error = str(exc)
         logger.error(f"Error occurred: {error}")
+        self.retry(exc=exc)
+
+
+@celery_app.task(
+    bind=True,
+    name="sentiment-analysis-consumer-many",
+    queue="sentiment-analysis",
+    default_retry_delay=30 * 60,  # Retry after 30 minutes if the task fails
+    max_retries=3,  # Maximum number of retries
+)
+def process_data_many(self, message):
+    try:
+        logger.info("Processing multiple reviews")
+        data = json.loads(message)
+        today = datetime.today().strftime("%Y-%m-%d")
+
+        reviews_to_update = []
+
+        for message_data in data:
+            review_id = message_data["review_id"]
+            review_bytes = message_data["review_bytes"]
+            review_sentence = base64.b64decode(review_bytes).decode("utf-8")
+
+            prediction = analyzer.predict(review_sentence)
+            logger.info(f"Prediction for review {review_id}: {prediction}")
+
+            review_update = {
+                "id": review_id,
+                "classification": prediction.output,
+                "sentiment_scores": {
+                    "positive": round(prediction.probas["POS"], 3),
+                    "negative": round(prediction.probas["NEG"], 3),
+                    "neutral": round(prediction.probas["NEU"], 3),
+                },
+                "classified_at": today,
+                "classified": True,
+            }
+            reviews_to_update.append(review_update)
+
+        if reviews_to_update:
+            Session = review_repository.sessionmaker
+            session = Session()
+
+            try:
+                review_repository.bulk_update_reviews(session, reviews_to_update)
+                session.commit()
+                logger.info(
+                    f"Bulk update completed for {len(reviews_to_update)} reviews."
+                )
+            finally:
+                session.close()
+
+    except Exception as exc:
+        logger.error(f"Error occurred: {str(exc)}")
         self.retry(exc=exc)

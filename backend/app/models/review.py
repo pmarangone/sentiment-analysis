@@ -14,6 +14,7 @@ class CreateReviewModel(BaseModel):
     """
 
     customer_id: uuid.UUID = Field(...)
+    company_id: uuid.UUID = Field(...)
     review_date: date = Field(...)
     review_data: str = Field(...)
 
@@ -27,9 +28,15 @@ class RequestReviewModel(BaseModel):
     review_data: Avaliação feita pelo usuário.
     """
 
+    company_id: str = Field(...)
     customer_name: str = Field(...)
     review_date: date = Field(...)
     review_data: str = Field(...)
+
+
+class RequestReviewsManyModel(BaseModel):
+    company_id: str = Field(...)
+    reviews: list = Field(...)
 
 
 class ReviewModel(RequestReviewModel):

@@ -137,3 +137,11 @@ def downgrade() -> None:
     op.drop_column("reviews", "sentiment_scores")
 
     op.drop_table("customers")
+
+    # Drop the enum type only if it exists
+    bind = op.get_bind()
+    result = bind.execute(
+        "SELECT 1 FROM pg_type WHERE typname = 'classification_enum'"
+    ).scalar()
+    if result is not None:
+        op.execute("DROP TYPE classification_enum")
