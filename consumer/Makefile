@@ -1,2 +1,2 @@
 celery:
-	celery -A worker2 worker -P solo -Q sentiment-analysis --loglevel=info
+	celery -A app.celery_app worker --loglevel=info --queues=sentiment-analysis

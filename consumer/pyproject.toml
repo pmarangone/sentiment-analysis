@@ -17,6 +17,4 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "ruff>=0.9.5",
-]
+dev = ["ruff>=0.9.5"]
