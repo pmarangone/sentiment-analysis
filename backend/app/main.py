@@ -10,8 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 from app.api import reviews_router
-from app.utils import get_logger
-from prometheus_client import make_asgi_app
+from app.utils.decorators import monitor_requests_middleware
+from app.utils.logger import get_logger
+from app.utils.metrics_route import metrics_router
 
 from app.db.session import lifespan
 
@@ -21,6 +22,7 @@ logger = get_logger(__name__)
 
 app = FastAPI(title="Sentiment Analysis", lifespan=lifespan)
 
+app.middleware("http")(monitor_requests_middleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +34,4 @@ app.add_middleware(
 
 
 app.include_router(reviews_router)
-
-
-metrics_app = make_asgi_app()
-app.mount("/metrics", metrics_app)
+app.include_router(metrics_router)
