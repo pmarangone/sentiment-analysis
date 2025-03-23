@@ -2,7 +2,7 @@ from datetime import datetime
 import base64
 import json
 
-from app.ml_models.sentiment_analysis import analyzer
+from app.ml_models.sentiment_analysis import get_analyzer
 from app.utils.logger import get_logger
 from app.db.review_repository import review_repository
 
@@ -10,6 +10,8 @@ logger = get_logger(__name__)
 
 
 def process_review(message):
+    analyzer = get_analyzer()
+
     message_data = json.loads(message)
     review_id = message_data["review_id"]
     review_bytes = message_data["review_bytes"]

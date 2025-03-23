@@ -2,7 +2,7 @@ from datetime import datetime
 import base64
 import json
 
-from app.ml_models.sentiment_analysis import analyzer
+from app.ml_models.sentiment_analysis import get_analyzer
 from app.utils.logger import get_logger
 from app.db.review_repository import review_repository
 
@@ -10,6 +10,8 @@ logger = get_logger(__name__)
 
 
 def process_many_reviews(message):
+    analyzer = get_analyzer()
+
     logger.info("Processing multiple reviews")
     data = json.loads(message)
     today = datetime.today().strftime("%Y-%m-%d")
@@ -45,5 +47,10 @@ def process_many_reviews(message):
             review_repository.bulk_update_reviews(session, reviews_to_update)
             session.commit()
             logger.info(f"Bulk update completed for {len(reviews_to_update)} reviews.")
+
+        except Exception as exc:
+            logger.error(f"Bulk update failed {str(exc)}.")
+            raise exc
+
         finally:
             session.close()

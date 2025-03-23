@@ -23,4 +23,11 @@ class SentimentAnalysisModel:
         return self.analyzer.predict(sentence)
 
 
-analyzer = SentimentAnalysisModel()
+_analyzer_instance = None
+
+
+def get_analyzer():
+    global _analyzer_instance
+    if _analyzer_instance is None:
+        _analyzer_instance = SentimentAnalysisModel()
+    return _analyzer_instance
