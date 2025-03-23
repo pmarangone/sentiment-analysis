@@ -5,7 +5,6 @@ from app.config import DATABASE_URL
 from app.db.schemas import Base
 from app.db.schemas.review import ReviewSchema
 from app.utils.logger import get_logger
-# from app.models.review import ReviewModel
 
 logger = get_logger(__name__)
 
@@ -51,5 +50,13 @@ class ReviewRepository:
         session.bulk_update_mappings(ReviewSchema, reviews)
 
 
-review_repository = ReviewRepository(DATABASE_URL)
-review_repository.initialize_schema()
+# Lazy load the repository to avoid multiprocessing issues
+_repository_instance = None
+
+
+def get_review_repository():
+    global _repository_instance
+    if _repository_instance is None:
+        _repository_instance = ReviewRepository(DATABASE_URL)
+        _repository_instance.initialize_schema()
+    return _repository_instance

@@ -4,13 +4,14 @@ import json
 
 from app.ml_models.sentiment_analysis import get_analyzer
 from app.utils.logger import get_logger
-from app.db.review_repository import review_repository
+from app.db.review_repository import get_review_repository
 
 logger = get_logger(__name__)
 
 
 def process_many_reviews(message):
     analyzer = get_analyzer()
+    review_repository = get_review_repository()
 
     logger.info("Processing multiple reviews")
     data = json.loads(message)
