@@ -2,6 +2,7 @@ from datetime import datetime
 import base64
 import json
 
+from app.core import get_prediction, get_prediction_next
 from app.ml_models.sentiment_analysis import get_analyzer
 from app.utils.logger import get_logger
 from app.db.review_repository import get_review_repository
@@ -20,7 +21,7 @@ def process_review(message):
 
     today = datetime.today().strftime("%Y-%m-%d")
 
-    prediction = analyzer.predict(review_sentence)
+    prediction = analyzer.predict(review_sentence)[0]
 
     logger.info(f"prediction: {prediction}")
 
@@ -28,12 +29,12 @@ def process_review(message):
         review = review_repository.update_review(session, review_id)
 
         if review:
-            review.classification = prediction.output
+            review.classification = get_prediction(prediction)
 
             review.sentiment_scores = {
-                "positive": round(prediction.probas["POS"], 3),
-                "negative": round(prediction.probas["NEG"], 3),
-                "neutral": round(prediction.probas["NEU"], 3),
+                "positive": round(get_prediction_next(prediction, "POS"), 3),
+                "negative": round(get_prediction_next(prediction, "NEG"), 3),
+                "neutral": round(get_prediction_next(prediction, "NEU"), 3),
             }
             review.classified_at = today
             review.classified = True

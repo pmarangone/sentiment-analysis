@@ -2,6 +2,7 @@ from datetime import datetime
 import base64
 import json
 
+from app.core import get_prediction, get_prediction_next
 from app.ml_models.sentiment_analysis import get_analyzer
 from app.utils.logger import get_logger
 from app.db.review_repository import get_review_repository
@@ -17,28 +18,28 @@ def process_many_reviews(message):
     data = json.loads(message)
     today = datetime.today().strftime("%Y-%m-%d")
 
-    reviews_to_update = []
+    review_ids = [message_data["review_id"] for message_data in data]
+    reviews = [
+        base64.b64decode(message_data["review_bytes"]).decode("utf-8")
+        for message_data in data
+    ]
 
-    for message_data in data:
-        review_id = message_data["review_id"]
-        review_bytes = message_data["review_bytes"]
-        review_sentence = base64.b64decode(review_bytes).decode("utf-8")
+    predictions = analyzer.predict(reviews)
 
-        prediction = analyzer.predict(review_sentence)
-        logger.info(f"Prediction for review {review_id}: {prediction}")
-
-        review_update = {
+    reviews_to_update = [
+        {
             "id": review_id,
-            "classification": prediction.output,
+            "classification": get_prediction(prediction),
             "sentiment_scores": {
-                "positive": round(prediction.probas["POS"], 3),
-                "negative": round(prediction.probas["NEG"], 3),
-                "neutral": round(prediction.probas["NEU"], 3),
+                "positive": round(get_prediction_next(prediction, "POS"), 3),
+                "negative": round(get_prediction_next(prediction, "NEG"), 3),
+                "neutral": round(get_prediction_next(prediction, "NEU"), 3),
             },
             "classified_at": today,
             "classified": True,
         }
-        reviews_to_update.append(review_update)
+        for review_id, prediction in zip(review_ids, predictions)
+    ]
 
     if reviews_to_update:
         Session = review_repository.sessionmaker

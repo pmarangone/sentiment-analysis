@@ -1,4 +1,4 @@
-from pysentimiento import create_analyzer
+from transformers import pipeline
 
 from app.utils.logger import get_logger
 
@@ -9,9 +9,13 @@ class SentimentAnalysisModel:
     def __init__(self):
         """Inicializa a instância responsável por classificar as avaliações"""
         logger.info("Initiating the analyzer")
-        self.analyzer = create_analyzer(task="sentiment", lang="pt")
+        self.analyzer = pipeline(
+            "sentiment-analysis",
+            model="pysentimiento/robertuito-sentiment-analysis",
+            device=0,
+        )
 
-    def predict(self, sentence):
+    def predict(self, sentence: str | list):
         """Prediz o sentimento de uma sentença.
 
         Args:
@@ -20,7 +24,7 @@ class SentimentAnalysisModel:
         Returns:
             str: Classificação do sentimento, exemplo: 'POS', 'NEG' ou 'NEU'.
         """
-        return self.analyzer.predict(sentence)
+        return self.analyzer(sentence, return_all_scores=True)
 
 
 _analyzer_instance = None
