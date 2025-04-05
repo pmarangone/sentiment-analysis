@@ -28,13 +28,7 @@ def process_review(message):
         review = review_repository.update_review(session, review_id)
 
         if review:
-            match prediction.output:
-                case "POS":
-                    review.classification = "positive"
-                case "NEG":
-                    review.classification = "negative"
-                case "NEU":
-                    review.classification = "neutral"
+            review.classification = prediction.output
 
             review.sentiment_scores = {
                 "positive": round(prediction.probas["POS"], 3),
