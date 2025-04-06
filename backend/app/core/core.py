@@ -98,7 +98,7 @@ async def core_create_review_celery(
     o consumidor.
     """
     try:
-        customer = check_customer_exists(db_session, review.customer_name)
+        customer = await check_customer_exists(db_session, review.customer_name)
 
         review = CreateReviewModel(
             company_id=review.company_id,
