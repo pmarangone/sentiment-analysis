@@ -12,7 +12,7 @@ from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-POSTGRES_URI = POSTGRES_URI = os.environ["POSTGRES_URI"]
+DATABASE_URL = DATABASE_URL = os.environ["DATABASE_URL"]
 POSTGRES_POOL_SIZE = int(os.environ["POSTGRES_POOL_SIZE"])
 
 
@@ -28,7 +28,7 @@ class Database:
         """Create connection pool if it doesn't exist"""
         try:
             pool = await asyncpg.create_pool(
-                POSTGRES_URI,
+                DATABASE_URL,
                 min_size=1,
                 max_size=POSTGRES_POOL_SIZE,
                 max_inactive_connection_lifetime=300,
