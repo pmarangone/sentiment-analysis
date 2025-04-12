@@ -19,3 +19,6 @@ class CeleryConfig:
         "app.tasks.sentiment-analysis-consumer": {"queue": QUEUE_NAME},
         "app.tasks.sentiment-analysis-consumer-many": {"queue": QUEUE_NAME},
     }
+
+    CELERY_WORKER_SEND_TASK_EVENTS = True
+    CELERY_TASK_SEND_SENT_EVENT = True

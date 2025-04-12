@@ -7,4 +7,4 @@ COPY . /app
 WORKDIR /app
 RUN uv sync --frozen --no-cache
 
-CMD ["/app/.venv/bin/python", "worker.py"]
+CMD ["/app/.venv/bin/celery", "-A", "app.celery_app", "worker", "-P", "prefork", "--loglevel=info", "--task-events", "--queues=sentiment-analysis", "--concurrency", "3"]

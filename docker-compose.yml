@@ -1,4 +1,4 @@
-name: sentiment-analysis-v04
+name: sentiment-analysis-v08
 services:
   # postgres:
   #   image: postgres:13
@@ -10,7 +10,7 @@ services:
   #   ports:
   #     - "5432:5432"
   #   networks:
-  #     - sentiment-network
+  #     - monitoring-network
 
   # rabbitmq:
   #   image: rabbitmq:3.12-management
@@ -24,27 +24,11 @@ services:
   #   volumes:
   #     - rabbitmq_data:/var/lib/rabbitmq
   #   networks:
-  #     - sentiment-network
-
-  # consumer:
-  #   build:
-  #     context: ./consumer
-  #     dockerfile: Dockerfile
-  #   container_name: sentiment-analysis-consumer
-  #   environment:
-  #     - DATABASE_URL=postgresql+psycopg://user:password@postgres:5432/database
-  #     - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
-  #     - POOL_SIZE=3
-  #     - MAX_RETRIES=3
-  #   depends_on:
-  #     - postgres
-  #     - rabbitmq
-  #   networks:
-  #     - sentiment-network
+  #     - monitoring-network
 
   prometheus:
     image: docker.io/prom/prometheus:v3.1.0 # Changed to 'latest' for simplicity or specify a desired version
-    container_name: prometheus-v07
+    container_name: prometheus-v08
     ports:
       - 9090:9090
     command: "--config.file=/etc/prometheus/prometheus.yaml --storage.tsdb.path=/prometheus" # Added storage path
@@ -57,7 +41,7 @@ services:
 
   loki:
     image: grafana/loki:latest
-    container_name: loki-v07
+    container_name: loki-v08
     volumes:
       - ./configs/loki.yaml:/etc/loki/config.yaml:ro
       - data_loki:/loki:rw
@@ -69,7 +53,7 @@ services:
 
   grafana:
     image: docker.io/grafana/grafana-oss:11.5.1
-    container_name: grafana-v07
+    container_name: grafana-v08
     ports:
       - "3000:3000"
     volumes:
@@ -78,21 +62,44 @@ services:
     networks:
       - monitoring-network
 
-
-  sentiment-analysis:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: sentiment-analysis-server-v07
+  celery-exporter:
+    image: danihodovic/celery-exporter
     ports:
-      - "8000:8000"
+      - "9808:9808"
     env_file:
-      - ./backend/.env
+      - ./consumer/.env
+    environment:
+      - TZ=America/Sao_Paulo
+    networks:
+      - monitoring-network
+
+  consumer:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    container_name: sentiment-analysis-consumer-v08
+    env_file:
+      - ./consumer/.env
     # depends_on:
     #   - postgres
     #   - rabbitmq
     networks:
       - monitoring-network
+
+  # sentiment-analysis:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: sentiment-analysis-server-v08
+  #   ports:
+  #     - "8000:8000"
+  #   env_file:
+  #     - ./backend/.env
+  #   # depends_on:
+  #   #   - postgres
+  #   #   - rabbitmq
+  #   networks:
+  #     - monitoring-network
 
 volumes:
   prometheus:
