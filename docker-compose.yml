@@ -83,14 +83,18 @@ services:
     build:
       context: ./consumer
       dockerfile: Dockerfile
-    container_name: sentiment-analysis-consumer-v08
+    container_name: sentiment-analysis-consumer-v09
     env_file:
       - ./consumer/.env
-    # depends_on:
-    #   - postgres
-    #   - rabbitmq
     networks:
       - monitoring-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   sentiment-analysis:
     build:
