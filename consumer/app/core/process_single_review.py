@@ -23,8 +23,6 @@ def process_review(message):
 
     prediction = analyzer.predict(review_sentence)[0]
 
-    logger.info(f"prediction: {prediction}")
-
     with review_repository.sessionmaker() as session:
         review = review_repository.update_review(session, review_id)
 

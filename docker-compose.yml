@@ -95,6 +95,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    depends_on:
+      loki:
+        condition: service_healthy
 
   sentiment-analysis:
     build:
