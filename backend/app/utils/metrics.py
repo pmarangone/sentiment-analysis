@@ -267,12 +267,8 @@ buckets = (
 )
 
 
-##### Database
 REQUEST_DB_DURATION_SECONDS = Histogram(
-    "db_request_duration_seconds",  # name
-    "Database request duration in seconds",  # description
-    labelnames=("op", "db", "table"),  # labels
-    buckets=buckets,  # buckets
+    "db_request_duration_seconds", "Database request duration in seconds", ["operation"]
 )
 
 

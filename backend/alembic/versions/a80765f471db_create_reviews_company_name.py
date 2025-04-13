@@ -19,13 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Ensure company_id is correctly formatted as UUID
     op.execute("""
         CREATE TABLE reviews_deepmind PARTITION OF reviews_partitioned
         FOR VALUES IN ('d3849d9c-1116-4260-b126-96c767c1d5d5'::UUID);
     """)
 
-    # Step 1: Insert data from reviews table into reviews_partitioned with updated company_id
     op.execute("""
         INSERT INTO reviews_partitioned (id, customer_id, review_date, review_data, 
         classification, classified_at, sentiment_scores, company_id)
@@ -37,6 +35,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Detach the partition before dropping it
     op.execute("ALTER TABLE reviews_partitioned DETACH PARTITION reviews_deepmind;")
     op.drop_table("reviews_deepmind")

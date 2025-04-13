@@ -1,67 +1,126 @@
+name: sentiment-analysis-v08
 services:
-  postgres:
-    image: postgres:13
-    container_name: postgres-sentiment-analysis
-    environment:
-      - POSTGRES_DB=database
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-    ports:
-      - "5432:5432"
-    networks:
-      - sentiment-network
+  # postgres:
+  #   image: postgres:13
+  #   container_name: postgres-sentiment-analysis
+  #   environment:
+  #     - POSTGRES_DB=database
+  #     - POSTGRES_USER=user
+  #     - POSTGRES_PASSWORD=password
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - monitoring-network
 
-  rabbitmq:
-    image: rabbitmq:3.12-management
-    container_name: rabbitmq-sentiment-analysis
+  # rabbitmq:
+  #   image: rabbitmq:3.12-management
+  #   container_name: rabbitmq-sentiment-analysis
+  #   ports:
+  #     - "5672:5672"  
+  #     - "15672:15672"  
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: guest
+  #     RABBITMQ_DEFAULT_PASS: guest
+  #   volumes:
+  #     - rabbitmq_data:/var/lib/rabbitmq
+  #   networks:
+  #     - monitoring-network
+
+  prometheus:
+    image: docker.io/prom/prometheus:v3.1.0 # Changed to 'latest' for simplicity or specify a desired version
+    container_name: prometheus-v08
     ports:
-      - "5672:5672"  
-      - "15672:15672"  
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      - 9090:9090
+    command: "--config.file=/etc/prometheus/prometheus.yaml --storage.tsdb.path=/prometheus" # Added storage path
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - ./configs/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - prometheus:/prometheus
+    restart: unless-stopped
     networks:
-      - sentiment-network
+      - monitoring-network
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki-v08
+    volumes:
+      - ./configs/loki.yaml:/etc/loki/config.yaml:ro
+      - data_loki:/loki:rw
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    networks:
+      - monitoring-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:3100/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  grafana:
+    image: docker.io/grafana/grafana-oss:11.5.1
+    container_name: grafana-v08
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - monitoring-network
+
+  celery-exporter:
+    image: danihodovic/celery-exporter
+    ports:
+      - "9808:9808"
+    env_file:
+      - ./consumer/.env
+    environment:
+      - TZ=America/Sao_Paulo
+    networks:
+      - monitoring-network
 
   consumer:
     build:
       context: ./consumer
       dockerfile: Dockerfile
-    container_name: sentiment-analysis-consumer
-    environment:
-      - DATABASE_URL=postgresql+psycopg://user:password@postgres:5432/database
-      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
-      - POOL_SIZE=3
-      - MAX_RETRIES=3
-    depends_on:
-      - postgres
-      - rabbitmq
+    container_name: sentiment-analysis-consumer-v09
+    env_file:
+      - ./consumer/.env
     networks:
-      - sentiment-network
+      - monitoring-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      loki:
+        condition: service_healthy
 
   sentiment-analysis:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: sentiment-analysis-server
+    container_name: sentiment-analysis-server-v08
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql+psycopg://user:password@postgres:5432/database
-      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
-      - POOL_SIZE=3
+    env_file:
+      - ./backend/.env
     depends_on:
-      - postgres
-      - rabbitmq
+      loki:
+        condition: service_healthy
     networks:
-      - sentiment-network
+      - monitoring-network
+    
 
 volumes:
-  rabbitmq_data:
+  prometheus:
+  grafana:
+  data_loki:
     driver: local
 
 networks:
-  sentiment-network:
+  monitoring-network:
     driver: bridge

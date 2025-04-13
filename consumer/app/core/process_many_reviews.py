@@ -14,7 +14,6 @@ def process_many_reviews(message):
     analyzer = get_analyzer()
     review_repository = get_review_repository()
 
-    logger.info("Processing multiple reviews")
     data = json.loads(message)
     today = datetime.today().strftime("%Y-%m-%d")
 
@@ -24,6 +23,7 @@ def process_many_reviews(message):
         for message_data in data
     ]
 
+    logger.info(f"Processing {len(review_ids)} reviews")
     predictions = analyzer.predict(reviews)
 
     reviews_to_update = [
