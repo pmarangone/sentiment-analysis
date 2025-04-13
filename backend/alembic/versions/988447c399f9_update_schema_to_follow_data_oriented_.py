@@ -26,24 +26,20 @@ def upgrade() -> None:
     )
     classification_enum.create(op.get_bind(), checkfirst=True)
 
-    # Replace empty strings with NULL in the classification column
     op.execute(
         sa.text("UPDATE reviews SET classification = NULL WHERE classification = ''")
     )
 
-    # Criar tabela de clientes
     op.create_table(
         "customers",
         sa.Column("id", sa.UUID(as_uuid=True), primary_key=True, index=True),
         sa.Column("name", sa.String, nullable=False, unique=True),
     )
 
-    # Criar uma tabela temporária para fazer a migração correta dos dados
     reviews_table = sa.table(
         "reviews", sa.column("customer_name", sa.String), sa.column("id", sa.UUID)
     )
 
-    # Criar os clientes com UUIDs únicos e mapear para os reviews
     conn = op.get_bind()
     existing_reviews = conn.execute(
         sa.select(reviews_table.c.customer_name, reviews_table.c.id)
@@ -52,14 +48,13 @@ def upgrade() -> None:
     customer_map = {}
     for customer_name, review_id in existing_reviews:
         if customer_name not in customer_map:
-            customer_id = str(uuid4())  # Gerar um UUID novo para o cliente
+            customer_id = str(uuid4())
             conn.execute(
                 sa.text("INSERT INTO customers (id, name) VALUES (:id, :name)"),
                 {"id": customer_id, "name": customer_name},
             )
             customer_map[customer_name] = customer_id
 
-        # Atualizar os reviews com os novos customer_id
         conn.execute(
             sa.text(
                 "UPDATE reviews SET customer_name = :customer_id WHERE id = :review_id"
@@ -67,7 +62,6 @@ def upgrade() -> None:
             {"customer_id": customer_map[customer_name], "review_id": review_id},
         )
 
-    # Agora podemos renomear a coluna e alterar seu tipo
     op.alter_column(
         "reviews",
         "customer_name",
@@ -78,7 +72,6 @@ def upgrade() -> None:
         postgresql_using="customer_name::uuid",
     )
 
-    # Criar a Foreign Key
     op.create_foreign_key(
         "fk_reviews_customers",
         "reviews",
@@ -88,7 +81,6 @@ def upgrade() -> None:
         ondelete="CASCADE",
     )
 
-    # Modificações adicionais na tabela reviews
     op.alter_column(
         "reviews",
         "classification",
@@ -138,7 +130,6 @@ def downgrade() -> None:
 
     op.drop_table("customers")
 
-    # Drop the enum type only if it exists
     bind = op.get_bind()
     result = bind.execute(
         "SELECT 1 FROM pg_type WHERE typname = 'classification_enum'"
