@@ -14,6 +14,7 @@ from app.core.core import (
     core_get_reviews,
     core_get_classification_count,
 )
+from app.db import ReviewRepository, CustomerRepository
 from app.models.review import RequestReviewModel, RequestReviewsManyModel
 from app.utils.logger import get_logger
 
@@ -31,7 +32,8 @@ async def get_reviews(request: Request, db_session: PostgresDep):
     Args:
     request: Instância de fastapi.Request
     """
-    return await core_get_reviews(db_session)
+    review_repository = ReviewRepository()
+    return await core_get_reviews(db_session, review_repository)
 
 
 @reviews_router.post("/celery")
@@ -56,7 +58,9 @@ async def post_review_celery(
     Returns:
     A entrada do usuário tal como foi criada no banco de dados.
     """
-    return await core_create_review_celery(db_session, review)
+    review_repository = ReviewRepository()
+    customer_repository = CustomerRepository()
+    return await core_create_review_celery(db_session, review, customer_repository, review_repository)
 
 
 @reviews_router.post("/many")
@@ -65,7 +69,9 @@ async def post_reviews_many(
     reviews: RequestReviewsManyModel,
     db_session: PostgresDep,
 ):
-    return await core_create_reviews_many(db_session, reviews)
+    review_repository = ReviewRepository()
+    customer_repository = CustomerRepository()
+    return await core_create_reviews_many(db_session, reviews, customer_repository, review_repository)
 
 
 @reviews_router.get("/report")
@@ -86,7 +92,8 @@ async def get_reviews_report(
     Returns:
     Lista, do tipo Json, com todas as avaliações feitas entre a data inicial e data final.
     """
-    return await core_get_classification_count(db_session, start_date, end_date)
+    review_repository = ReviewRepository()
+    return await core_get_classification_count(db_session, start_date, end_date, review_repository)
 
 
 @reviews_router.get("/{id}")
@@ -100,4 +107,5 @@ async def get_review_by_id(request: Request, id: uuid.UUID, db_session: Postgres
     Returns:
     A avaliação referente ao ID ou retorna um erro.
     """
-    return await core_get_review_by_id(db_session, id)
+    review_repository = ReviewRepository()
+    return await core_get_review_by_id(db_session, id, review_repository)
