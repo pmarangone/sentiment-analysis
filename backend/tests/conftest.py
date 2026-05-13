@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.db.schemas import Base
 from app.db.review_repository import ReviewRepository
-from app.models.review import BaseReviewModel
+from app.models.review import RequestReviewModel as BaseReviewModel
 from app.db.schemas.review import ReviewSchema
 
 DATABASE_URL = "sqlite:///:memory:"
@@ -28,13 +28,14 @@ def db_session():
 @pytest.fixture
 def repository():
     """Cria o repositório responsável pelas operações no banco de dados"""
-    return ReviewRepository(DATABASE_URL)
+    return ReviewRepository()
 
 
 @pytest.fixture
 def review_model():
     """Fixture do modelo de uma avaliação"""
     base_review = BaseReviewModel(
+        company_id="1",
         customer_name="Patrick",
         review_date=date(2025, 1, 1),
         review_data="Maravilhoso!",
