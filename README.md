@@ -1,49 +1,60 @@
-# Análise de sentimento
+# Análise de Sentimento
+
 Projeto que demonstra a utilização de modelos de aprendizagem na classificação de avaliação de usuários.
 
+## Arquitetura
+O sistema utiliza uma arquitetura baseada em eventos para processamento assíncrono de tarefas de análise de sentimento.
+
+```mermaid
+graph TD
+    User((User)) -- API Request --> Backend[Backend - FastAPI]
+    Backend -- Publish Task --> RabbitMQ[RabbitMQ]
+    RabbitMQ -- Consume Task --> Consumer[Consumer - Worker]
+    Consumer -- Run Inference --> ML[ML Model]
+    Consumer -- Update Result --> DB[(PostgreSQL)]
+    Backend -- Fetch Results --> DB
+```
+
+## Componentes Principais
+
+- **`backend/`**: API desenvolvida com FastAPI. Responsável por receber requisições, publicar tarefas na fila e consultar resultados persistidos.
+- **`consumer/`**: Worker de background responsável por processar as tarefas da fila, executar o modelo de ML e persistir os resultados no banco de dados.
 
 ## Requisitos
 Antes de iniciar, certifique-se de ter instalado:
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
-## Estrutura dos Contêineres
-- **PostgreSQL**: Banco de dados relacional.
-- **RabbitMQ**: Sistema de mensageria.
-- **Consumer**: Processa mensagens do RabbitMQ e interage com o banco de dados.
-- **Backend**: API FastAPI para análise de sentimentos.
+## Estrutura do Projeto
+```text
+.
+├── backend/        # API FastAPI
+├── consumer/       # Processamento de tarefas e ML
+├── configs/        # Configurações de serviços (Loki, Prometheus)
+└── docker-compose.yml
+```
 
 ## Configuração e Execução
 
-### 1. Clonar o Repositório
-```sh
-git clone <URL_DO_REPOSITORIO>
-cd <NOME_DO_REPOSITORIO>
-```
-
-### 2. Construir e Iniciar os Contêineres
-Execute o seguinte comando na raiz do projeto:
+### 1. Construir e Iniciar os Contêineres
+Na raiz do projeto, execute:
 ```sh
 docker compose up --build
 ```
-Este comando:
-- Constrói as imagens do backend e do consumidor.
-- Inicia os serviços PostgreSQL, RabbitMQ, consumidor e backend.
+Isso iniciará todos os serviços definidos no `docker-compose.yml`, incluindo monitoramento (Loki, Prometheus, Grafana).
 
-### 3. Verificar os Contêineres em Execução
-Para verificar se os contêineres estão ativos:
-```sh
-docker ps
-```
-
-### 4. Acessar a API de Análise de Sentimentos
+### 2. Acessar a API
 A API estará disponível em:
 ```
 http://localhost:8000
 ```
 
-### 5. Parar os Contêineres
-Para interromper a execução dos contêineres:
+### 3. Gerenciamento
+Para parar os contêineres:
 ```sh
 docker compose down
+```
+Para verificar o status dos contêineres:
+```sh
+docker ps
 ```
