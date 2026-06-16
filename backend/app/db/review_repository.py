@@ -1,3 +1,4 @@
+from app.domain.repositories.review_repository_interface import ReviewRepositoryInterface
 from typing import List
 import asyncpg
 
@@ -9,7 +10,7 @@ from app.utils.decorators import monitor_db_operation
 logger = get_logger(__name__)
 
 
-class ReviewRepository:
+class ReviewRepository(ReviewRepositoryInterface):
     @monitor_db_operation("get_reviews")
     async def get_reviews(self, session, *args) -> List[asyncpg.Record]:
         query = "SELECT * from reviews_partitioned"

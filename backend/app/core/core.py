@@ -12,8 +12,11 @@ from app.utils.logger import get_logger
 from app.db.schemas.review import ReviewSchema
 from app.db.schemas.customer import Customer
 
+from app.application.use_cases.create_review_use_case import CreateReviewUseCase
+
 review_repository = ReviewRepository()
 customer_repository = CustomerRepository()
+create_review_use_case = CreateReviewUseCase(review_repository, celery_app)
 
 logger = get_logger(__name__)
 
@@ -99,30 +102,7 @@ async def core_create_review_celery(
     """
     try:
         customer = await check_customer_exists(db_session, review.customer_name)
-
-        review = CreateReviewModel(
-            company_id=review.company_id,
-            customer_id=customer.id,
-            review_date=review.review_date,
-            review_data=review.review_data,
-        )
-        row = await review_repository.create_review(db_session, review)
-        created_review = ReviewSchema(**dict(row))
-
-        logger.info(f"Created review: {created_review}")
-
-        message = {
-            "review_id": str(created_review.id),
-            "review_bytes": base64.b64encode(
-                created_review.review_data.encode()
-            ).decode("utf-8"),
-        }
-
-        json_data = json.dumps(message)
-
-        _task = celery_app.send_task(
-            "sentiment-analysis-consumer", args=[json_data], queue="sentiment-analysis"
-        )
+        created_review = await create_review_use_case.execute(db_session, review, customer.id)
         return created(created_review)
 
     except Exception as exc:
