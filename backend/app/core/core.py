@@ -5,20 +5,19 @@ from sqlalchemy.orm import Session
 
 from app import celery_app
 from app.api.responses import created, not_found, server_error, success
-from app.db import ReviewRepository, CustomerRepository
 
 from app.models.review import CreateReviewModel, RequestReviewModel
 from app.utils.logger import get_logger
 from app.db.schemas.review import ReviewSchema
 from app.db.schemas.customer import Customer
-
-review_repository = ReviewRepository()
-customer_repository = CustomerRepository()
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.db import ReviewRepository, CustomerRepository
 
 logger = get_logger(__name__)
 
 
-async def check_customer_exists(db_session, customer_name):
+async def check_customer_exists(db_session, customer_name, customer_repository: 'CustomerRepository'):
     row = await customer_repository.get_customer_by_name(db_session, customer_name)
     if not row:
         row = await customer_repository.create_customer(db_session, customer_name)
@@ -32,6 +31,8 @@ async def check_customer_exists(db_session, customer_name):
 async def core_create_reviews_many(
     db_session: Session,
     reviews: RequestReviewModel,
+    customer_repository: 'CustomerRepository',
+    review_repository: 'ReviewRepository',
 ):
     try:
         result = await customer_repository.insert_many(
@@ -84,6 +85,8 @@ async def core_create_reviews_many(
 async def core_create_review_celery(
     db_session: Session,
     review: RequestReviewModel,
+    customer_repository: 'CustomerRepository',
+    review_repository: 'ReviewRepository',
 ):
     """Cria a avaliação no banco de dados e envia a avaliação e o ID da entrada
     no banco de dados para o consumidor.
@@ -98,7 +101,7 @@ async def core_create_review_celery(
     o consumidor.
     """
     try:
-        customer = await check_customer_exists(db_session, review.customer_name)
+        customer = await check_customer_exists(db_session, review.customer_name, customer_repository)
 
         review = CreateReviewModel(
             company_id=review.company_id,
@@ -131,7 +134,11 @@ async def core_create_review_celery(
         return server_error(error)
 
 
-async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
+async def core_get_review_by_id(
+    db_session: Session, 
+    id: uuid.UUID, 
+    review_repository: 'ReviewRepository'
+):
     """Busca no banco de dados uma avaliação pelo id.
 
     Args:
@@ -158,6 +165,7 @@ async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
 
 async def core_get_reviews(
     db_session: Session,
+    review_repository: ReviewRepository,
 ):
     """Busca no banco de dados todas as avaliações.
 
@@ -194,7 +202,12 @@ def core_generate_report(data):
     }
 
 
-async def core_get_classification_count(db_session: Session, start_date, end_date):
+async def core_get_classification_count(
+    db_session: Session, 
+    start_date, 
+    end_date,
+    review_repository: 'ReviewRepository'
+):
     """Gera um relatório do número de avaliações positivas, negativas ou neutras
     feitas entre a data inicial e a data final (inclusiva).
 
