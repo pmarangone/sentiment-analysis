@@ -1,6 +1,7 @@
 from datetime import datetime
 import base64
 import json
+import traceback
 
 from app.core import get_prediction, get_prediction_next
 from app.ml_models.sentiment_analysis import get_analyzer
@@ -11,20 +12,39 @@ logger = get_logger(__name__)
 
 
 def process_many_reviews(message):
-    analyzer = get_analyzer()
+    try:
+        analyzer = get_analyzer()
+    except Exception as e:
+        logger.error(f"Failed to initialize analyzer: {e}")
+        raise e
+
     review_repository = get_review_repository()
 
-    data = json.loads(message)
+    try:
+        data = json.loads(message)
+    except Exception as e:
+        logger.error(f"Failed to parse batch message: {e}")
+        return
+
     today = datetime.today().strftime("%Y-%m-%d")
 
-    review_ids = [message_data["review_id"] for message_data in data]
-    reviews = [
-        base64.b64decode(message_data["review_bytes"]).decode("utf-8")
-        for message_data in data
-    ]
+    try:
+        review_ids = [message_data["review_id"] for message_data in data]
+        reviews = [
+            base64.b64decode(message_data["review_bytes"]).decode("utf-8")
+            for message_data in data
+        ]
+    except KeyError as e:
+        logger.error(f"Missing key in batch message: {e}")
+        return
 
     logger.info(f"Processing {len(review_ids)} reviews")
-    predictions = analyzer.predict(reviews)
+    
+    try:
+        predictions = analyzer.predict(reviews)
+    except Exception as e:
+        logger.error(f"Failed to predict batch sentiment: {e}")
+        raise e
 
     reviews_to_update = [
         {
@@ -51,7 +71,8 @@ def process_many_reviews(message):
             logger.info(f"Bulk update completed for {len(reviews_to_update)} reviews.")
 
         except Exception as exc:
-            logger.error(f"Bulk update failed {str(exc)}.")
+            session.rollback()
+            logger.error(f"Bulk update failed: {str(exc)}\n{traceback.format_exc()}.")
             raise exc
 
         finally:
