@@ -12,6 +12,6 @@ class Customer(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, unique=True, nullable=False)
 
-    reviews = relationship(
-        "ReviewSchema", back_populates="customer", cascade="all, delete"
-    )
+    # reviews = relationship(
+    #     "ReviewSchema", back_populates="customer", cascade="all, delete"
+    # )

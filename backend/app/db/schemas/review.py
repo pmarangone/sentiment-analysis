@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, ForeignKey, String, JSON
+from sqlalchemy import Column, Date, ForeignKey, String, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
 import uuid
@@ -31,15 +31,14 @@ class ReviewSchema(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("customers.id", ondelete="CASCADE"),
-        nullable=False,
+        String,
+        nullable=True,
     )
     company_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("companies.id", ondelete="CASCADE"),
-        nullable=False,
+        String,
+        nullable=True,
     )
+    customer_name = Column(String, nullable=True)
     review_date = Column(Date, nullable=False)
     review_data = Column(String, nullable=False)
     classification = Column(
@@ -49,4 +48,7 @@ class ReviewSchema(Base):
     classified_at = Column(Date, nullable=True)
     sentiment_scores = Column(JSON, nullable=True)
 
-    customer = relationship("Customer", back_populates="reviews")
+    classified = Column(Boolean, nullable=True)
+    pos_score = Column(JSON, nullable=True)
+    neg_score = Column(JSON, nullable=True)
+    neu_score = Column(JSON, nullable=True)
