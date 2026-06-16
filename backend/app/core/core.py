@@ -5,23 +5,17 @@ from sqlalchemy.orm import Session
 
 from app import celery_app
 from app.api.responses import created, not_found, server_error, success
-from app.db import ReviewRepository, CustomerRepository
-
-from app.models.review import CreateReviewModel, RequestReviewModel
-from app.utils.logger import get_logger
-from app.db.schemas.review import ReviewSchema
-from app.db.schemas.customer import Customer
-
-review_repository = ReviewRepository()
-customer_repository = CustomerRepository()
+from app.db.repository_interfaces import ICustomerRepository, IReviewRepository
 
 logger = get_logger(__name__)
 
 
-async def check_customer_exists(db_session, customer_name):
-    row = await customer_repository.get_customer_by_name(db_session, customer_name)
+async def check_customer_exists(
+    db_session, customer_name, customer_repo: ICustomerRepository
+):
+    row = await customer_repo.get_customer_by_name(db_session, customer_name)
     if not row:
-        row = await customer_repository.create_customer(db_session, customer_name)
+        row = await customer_repo.create_customer(db_session, customer_name)
 
         if not row:
             raise Exception("Customer was not")
@@ -32,15 +26,17 @@ async def check_customer_exists(db_session, customer_name):
 async def core_create_reviews_many(
     db_session: Session,
     reviews: RequestReviewModel,
+    review_repo: IReviewRepository,
+    customer_repo: ICustomerRepository,
 ):
     try:
-        result = await customer_repository.insert_many(
+        result = await customer_repo.insert_many(
             db_session, [review["customer_name"] for review in reviews.reviews]
         )
 
         customer_map = {row["name"]: row["id"] for row in result}
 
-        reviews = [
+        reviews_data = [
             CreateReviewModel(
                 company_id=reviews.company_id,
                 customer_id=customer_map[review["customer_name"]],
@@ -50,7 +46,7 @@ async def core_create_reviews_many(
             for review in reviews.reviews
         ]
 
-        rows = await review_repository.create_reviews_many(db_session, reviews)
+        rows = await review_repo.create_reviews_many(db_session, reviews_data)
         created_reviews = [ReviewSchema(**dict(row)) for row in rows]
 
         logger.info(f"Created {len(created_reviews)} reviews")
@@ -84,6 +80,8 @@ async def core_create_reviews_many(
 async def core_create_review_celery(
     db_session: Session,
     review: RequestReviewModel,
+    review_repo: IReviewRepository,
+    customer_repo: ICustomerRepository,
 ):
     """Cria a avaliação no banco de dados e envia a avaliação e o ID da entrada
     no banco de dados para o consumidor.
@@ -98,15 +96,15 @@ async def core_create_review_celery(
     o consumidor.
     """
     try:
-        customer = await check_customer_exists(db_session, review.customer_name)
+        customer = await check_customer_exists(db_session, review.customer_name, customer_repo)
 
-        review = CreateReviewModel(
+        review_model = CreateReviewModel(
             company_id=review.company_id,
             customer_id=customer.id,
             review_date=review.review_date,
             review_data=review.review_data,
         )
-        row = await review_repository.create_review(db_session, review)
+        row = await review_repo.create_review(db_session, review_model)
         created_review = ReviewSchema(**dict(row))
 
         logger.info(f"Created review: {created_review}")
@@ -131,7 +129,7 @@ async def core_create_review_celery(
         return server_error(error)
 
 
-async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
+async def core_get_review_by_id(db_session: Session, id: uuid.UUID, review_repo: IReviewRepository):
     """Busca no banco de dados uma avaliação pelo id.
 
     Args:
@@ -144,7 +142,7 @@ async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
     erro_servidor: Mensagem de erro
     """
     try:
-        review = await review_repository.get_review_by_id(db_session, id)
+        review = await review_repo.get_review_by_id(db_session, id)
 
         if review:
             return success(review)
@@ -158,6 +156,7 @@ async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
 
 async def core_get_reviews(
     db_session: Session,
+    review_repo: IReviewRepository
 ):
     """Busca no banco de dados todas as avaliações.
 
@@ -170,7 +169,7 @@ async def core_get_reviews(
     erro_servidor: Mensagem de erro
     """
     try:
-        reviews = await review_repository.get_reviews(db_session)
+        reviews = await review_repo.get_reviews(db_session)
 
         if reviews:
             return success(reviews)
@@ -194,7 +193,7 @@ def core_generate_report(data):
     }
 
 
-async def core_get_classification_count(db_session: Session, start_date, end_date):
+async def core_get_classification_count(db_session: Session, start_date, end_date, review_repo: IReviewRepository):
     """Gera um relatório do número de avaliações positivas, negativas ou neutras
     feitas entre a data inicial e a data final (inclusiva).
 
@@ -209,7 +208,7 @@ async def core_get_classification_count(db_session: Session, start_date, end_dat
     erro_servidor: Mensagem de erro
     """
     try:
-        result = await review_repository.get_classification_count(
+        result = await review_repo.get_classification_count(
             db_session, start_date.date(), end_date.date()
         )
 

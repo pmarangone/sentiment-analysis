@@ -9,7 +9,9 @@ from app.utils.decorators import monitor_db_operation
 logger = get_logger(__name__)
 
 
-class ReviewRepository:
+from app.db.repository_interfaces import IReviewRepository
+
+class ReviewRepository(IReviewRepository):
     @monitor_db_operation("get_reviews")
     async def get_reviews(self, session, *args) -> List[asyncpg.Record]:
         query = "SELECT * from reviews_partitioned"

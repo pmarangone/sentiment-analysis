@@ -7,7 +7,9 @@ from app.utils.decorators import monitor_db_operation
 logger = get_logger(__name__)
 
 
-class CustomerRepository:
+from app.db.repository_interfaces import ICustomerRepository
+
+class CustomerRepository(ICustomerRepository):
     @monitor_db_operation("get_customers")
     async def get_customers(self, session) -> List[asyncpg.Record]:
         query = "SELECT * FROM customers"
