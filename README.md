@@ -1,89 +1,89 @@
-# Sentiment Analysis System
+# Sistema de Análisis de Sentimiento
 
-This project implements an asynchronous sentiment analysis pipeline for user reviews, utilizing a machine learning model to categorize feedback automatically.
+Este proyecto implementa un pipeline asíncrono de análisis de sentimiento para reseñas de usuarios, utilizando un modelo de aprendizaje automático para categorizar comentarios automáticamente.
 
-## Architecture Overview
+## Descripción general de la arquitectura
 
-The application follows an asynchronous task-queue pattern to ensure scalable and decoupled processing of user reviews:
+La aplicación sigue un patrón de cola de tareas asíncrona para asegurar un procesamiento escalable y desacoplado de las reseñas de los usuarios:
 
-- **API Layer (FastAPI)**: Serves endpoints to receive reviews and offloads processing to a background task queue.
-- **Messaging Layer (RabbitMQ)**: Acts as the message broker between the API and the background worker.
-- **Processing Layer (Celery Consumer)**: Listens to the message queue, performs ML sentiment analysis using pre-trained models, and persists the result to the database.
-- **Database Layer (PostgreSQL)**: Stores company, review, and customer data.
-- **Observability Layer**: 
-    - **Prometheus/Celery Exporter**: Collects system and task metrics.
-    - **Loki**: Aggregates logs for troubleshooting.
-    - **Grafana**: Provides visualization of metrics and logs.
+- **Capa de API (FastAPI)**: Sirve puntos de conexión (endpoints) para recibir reseñas y delega el procesamiento a una cola de tareas en segundo plano.
+- **Capa de Mensajería (RabbitMQ)**: Actúa como el intermediario de mensajes (message broker) entre la API y el trabajador de segundo plano.
+- **Capa de Procesamiento (Consumidor Celery)**: Escucha la cola de mensajes, realiza análisis de sentimiento de ML utilizando modelos pre-entrenados, y persiste el resultado en la base de datos.
+- **Capa de Base de Datos (PostgreSQL)**: Almacena datos de empresas, reseñas y clientes.
+- **Capa de Observabilidad**: 
+    - **Prometheus/Celery Exporter**: Recopila métricas del sistema y de las tareas.
+    - **Loki**: Agrega registros (logs) para la resolución de problemas.
+    - **Grafana**: Proporciona visualización de métricas y registros.
 
-## System Diagram
+## Diagrama del Sistema
 
 ```mermaid
 graph LR
-    User[Client] -->|POST /reviews| API[FastAPI Backend]
-    API -->|Enqueue Task| MQ[RabbitMQ]
-    MQ -->|Consume| Consumer[Celery Consumer]
-    Consumer -->|Run Inference| ML[Sentiment Model]
-    Consumer -->|Save| DB[(PostgreSQL)]
+    User[Cliente] -->|POST /reviews| API[FastAPI Backend]
+    API -->|Encolar Tarea| MQ[RabbitMQ]
+    MQ -->|Consumir| Consumer[Consumidor Celery]
+    Consumer -->|Ejecutar Inferencia| ML[Modelo de Sentimiento]
+    Consumer -->|Guardar| DB[(PostgreSQL)]
     
-    subgraph Observability
+    subgraph Observabilidad
         Prometheus
         Loki
         Grafana
     end
     
-    API -.->|Metrics| Prometheus
-    Consumer -.->|Metrics| Prometheus
-    Consumer -.->|Logs| Loki
-    Prometheus & Loki -->|Data| Grafana
+    API -.->|Métricas| Prometheus
+    Consumer -.->|Métricas| Prometheus
+    Consumer -.->|Registros| Loki
+    Prometheus & Loki -->|Datos| Grafana
 ```
 
-## Tech Stack
+## Stack Tecnológico
 
 - **API**: FastAPI
-- **Task Queue**: Celery, RabbitMQ
-- **Database**: PostgreSQL
-- **Monitoring**: Prometheus, Loki, Grafana
+- **Cola de Tareas**: Celery, RabbitMQ
+- **Base de Datos**: PostgreSQL
+- **Monitoreo**: Prometheus, Loki, Grafana
 
-## Prerequisites
+## Requisitos Previos
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
-## Setup & Running
+## Configuración y Ejecución
 
-1. **Clone the repository**:
+1. **Clonar el repositorio**:
    ```sh
-   git clone <repository-url>
-   cd <repository-directory>
+   git clone <url-del-repositorio>
+   cd <directorio-del-repositorio>
    ```
 
-2. **Build and start the containers**:
+2. **Construir y levantar los contenedores**:
    ```sh
    docker compose up --build
    ```
-   This command initializes the entire stack, including the backend, consumer, message broker, database, and the observability stack.
+   Este comando inicializa todo el stack, incluyendo el backend, el consumidor, el intermediario de mensajes, la base de datos y el stack de observabilidad.
 
-3. **Check container status**:
+3. **Verificar el estado de los contenedores**:
    ```sh
    docker ps
    ```
 
-4. **Stop the containers**:
+4. **Detener los contenedores**:
    ```sh
    docker compose down
    ```
 
-## Monitoring
+## Monitoreo
 
-The project includes an observability stack accessible via Grafana.
+El proyecto incluye un stack de observabilidad accesible vía Grafana.
 
-- **Grafana**: Available at `http://localhost:3000` (default credentials).
-- **Dashboards**: Pre-configured dashboards can be found in the `/dashboards` directory. You can import these directly into Grafana to visualize system health, request latency, and sentiment analysis processing metrics.
+- **Grafana**: Disponible en `http://localhost:3000` (credenciales por defecto).
+- **Tableros**: Los tableros pre-configurados se pueden encontrar en el directorio `/dashboards`. Puedes importar estos directamente en Grafana para visualizar la salud del sistema, la latencia de las solicitudes y las métricas de procesamiento del análisis de sentimiento.
 
-## How to Verify
+## Cómo Verificar
 
-To verify the system is functioning correctly:
-1. Ensure all containers are running via `docker ps`.
-2. Access the API documentation at `http://localhost:8000/docs` and submit a test review.
-3. Check the logs in the terminal or use Loki/Grafana to verify the task was processed by the Celery worker.
-4. View metrics in Grafana to see the review processing throughput and system resource utilization.
+Para verificar que el sistema funciona correctamente:
+1. Asegúrate de que todos los contenedores estén ejecutándose mediante `docker ps`.
+2. Accede a la documentación de la API en `http://localhost:8000/docs` y envía una reseña de prueba.
+3. Revisa los logs en la terminal o utiliza Loki/Grafana para verificar que la tarea fue procesada por el trabajador (worker) de Celery.
+4. Observa las métricas en Grafana para ver el rendimiento del procesamiento de reseñas y la utilización de los recursos del sistema.
