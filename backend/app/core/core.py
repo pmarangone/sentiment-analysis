@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app import celery_app
-from app.api.responses import created, not_found, server_error, success
+from fastapi import HTTPException
 from app.db import ReviewRepository, CustomerRepository
 
 from app.models.review import CreateReviewModel, RequestReviewModel
@@ -73,12 +73,11 @@ async def core_create_reviews_many(
             queue="sentiment-analysis",
         )
 
-        return created(created_reviews)
+        return created_reviews
 
     except Exception as exc:
-        error = str(exc)
-        logger.error(f"Error while creating review: {error}")
-        return server_error(error)
+        logger.error(f"Error while creating review: {str(exc)}")
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 async def core_create_review_celery(
@@ -123,12 +122,11 @@ async def core_create_review_celery(
         _task = celery_app.send_task(
             "sentiment-analysis-consumer", args=[json_data], queue="sentiment-analysis"
         )
-        return created(created_review)
+        return created_review
 
     except Exception as exc:
-        error = str(exc)
-        logger.error(f"Error while creating review: {error}")
-        return server_error(error)
+        logger.error(f"Error while creating review: {str(exc)}")
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
@@ -147,13 +145,14 @@ async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
         review = await review_repository.get_review_by_id(db_session, id)
 
         if review:
-            return success(review)
-        return not_found()
+            return review
+        raise HTTPException(status_code=404, detail="Review not found")
 
     except Exception as exc:
-        error = str(exc)
-        logger.error(f"Error while fetching review with id {id}: {error}")
-        return server_error(error)
+        if isinstance(exc, HTTPException):
+            raise exc
+        logger.error(f"Error while fetching review with id {id}: {str(exc)}")
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 async def core_get_reviews(
@@ -173,13 +172,14 @@ async def core_get_reviews(
         reviews = await review_repository.get_reviews(db_session)
 
         if reviews:
-            return success(reviews)
-        return not_found()
+            return reviews
+        raise HTTPException(status_code=404, detail="No reviews found")
 
     except Exception as exc:
-        error = str(exc)
-        logger.error(f"Error while fetching reviews: {error}")
-        return server_error(error)
+        if isinstance(exc, HTTPException):
+            raise exc
+        logger.error(f"Error while fetching reviews: {str(exc)}")
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 def core_generate_report(data):
@@ -214,12 +214,12 @@ async def core_get_classification_count(db_session: Session, start_date, end_dat
         )
 
         if result:
-            report = core_generate_report(result)
-            return success(report)
+            return core_generate_report(result)
 
-        return not_found()
+        raise HTTPException(status_code=404, detail="No classification found for the given dates")
 
     except Exception as exc:
-        error = str(exc)
-        logger.error(f"Error while fetching report: {error}")
-        return server_error(error)
+        if isinstance(exc, HTTPException):
+            raise exc
+        logger.error(f"Error while fetching report: {str(exc)}")
+        raise HTTPException(status_code=500, detail=str(exc))

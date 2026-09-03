@@ -14,7 +14,7 @@ from app.core.core import (
     core_get_reviews,
     core_get_classification_count,
 )
-from app.models.review import RequestReviewModel, RequestReviewsManyModel
+from app.api.responses import created, success
 from app.utils.logger import get_logger
 
 from app.db.session import PostgresDep
@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 reviews_router = APIRouter(prefix="/reviews")
 
 
-@reviews_router.get("/")
+@reviews_router.get("/", status_code=200)
 async def get_reviews(request: Request, db_session: PostgresDep):
     """Retorna todas as avaliações.
 
@@ -34,7 +34,7 @@ async def get_reviews(request: Request, db_session: PostgresDep):
     return await core_get_reviews(db_session)
 
 
-@reviews_router.post("/celery")
+@reviews_router.post("/celery", status_code=201)
 async def post_review_celery(
     request: Request,
     review: RequestReviewModel,
@@ -59,7 +59,7 @@ async def post_review_celery(
     return await core_create_review_celery(db_session, review)
 
 
-@reviews_router.post("/many")
+@reviews_router.post("/many", status_code=201)
 async def post_reviews_many(
     request: Request,
     reviews: RequestReviewsManyModel,
@@ -68,7 +68,7 @@ async def post_reviews_many(
     return await core_create_reviews_many(db_session, reviews)
 
 
-@reviews_router.get("/report")
+@reviews_router.get("/report", status_code=200)
 async def get_reviews_report(
     request: Request,
     start_date: Annotated[datetime, Query()],
@@ -89,7 +89,7 @@ async def get_reviews_report(
     return await core_get_classification_count(db_session, start_date, end_date)
 
 
-@reviews_router.get("/{id}")
+@reviews_router.get("/{id}", status_code=200)
 async def get_review_by_id(request: Request, id: uuid.UUID, db_session: PostgresDep):
     """Retorna a avaliação referente ao ID, caso exista.
 
