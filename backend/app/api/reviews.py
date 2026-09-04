@@ -4,7 +4,6 @@ import uuid
 from fastapi import (
     APIRouter,
     Query,
-    Request,
 )
 
 from app.core.core import (
@@ -25,18 +24,13 @@ reviews_router = APIRouter(prefix="/reviews")
 
 
 @reviews_router.get("/")
-async def get_reviews(request: Request, db_session: PostgresDep):
-    """Retorna todas as avaliações.
-
-    Args:
-    request: Instância de fastapi.Request
-    """
+async def get_reviews(db_session: PostgresDep):
+    """Retorna todas as avaliações."""
     return await core_get_reviews(db_session)
 
 
 @reviews_router.post("/celery")
 async def post_review_celery(
-    request: Request,
     review: RequestReviewModel,
     db_session: PostgresDep,
 ):
@@ -44,7 +38,6 @@ async def post_review_celery(
     no banco de dados para o consumidor.
 
     Args:
-    request: Instância de fastapi.Request.
     review: Instância de RequestReviewModel.
     Corpo da requisição esperado:
     {
@@ -61,7 +54,6 @@ async def post_review_celery(
 
 @reviews_router.post("/many")
 async def post_reviews_many(
-    request: Request,
     reviews: RequestReviewsManyModel,
     db_session: PostgresDep,
 ):
@@ -70,7 +62,6 @@ async def post_reviews_many(
 
 @reviews_router.get("/report")
 async def get_reviews_report(
-    request: Request,
     start_date: Annotated[datetime, Query()],
     end_date: Annotated[datetime, Query()],
     db_session: PostgresDep,
@@ -79,7 +70,6 @@ async def get_reviews_report(
     entre as datas fornecidas (inclusiva).
 
     Args:
-    request: Instância de fastapi.Request.
     start_date: A data inicial da busca.
     end_date: A data final da busca.
 
@@ -90,11 +80,10 @@ async def get_reviews_report(
 
 
 @reviews_router.get("/{id}")
-async def get_review_by_id(request: Request, id: uuid.UUID, db_session: PostgresDep):
+async def get_review_by_id(id: uuid.UUID, db_session: PostgresDep):
     """Retorna a avaliação referente ao ID, caso exista.
 
     Args:
-    request: Instância de fastapi.Request.
     id: Instância uuid.UUID referente a avaliação.
 
     Returns:

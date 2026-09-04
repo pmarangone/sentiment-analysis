@@ -89,7 +89,6 @@ async def core_create_review_celery(
     no banco de dados para o consumidor.
 
     Args:
-    request: Instância de fastapi.Request
     review: Instância derivada de pydantic.BaseModel, que foi enviado no corpo da requisição.
 
     Returns:
@@ -135,7 +134,6 @@ async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
     """Busca no banco de dados uma avaliação pelo id.
 
     Args:
-    request: Instância de fastapi.Request
     id: Instância uuid.UUID referente a avaliação
 
     Returns:
@@ -160,9 +158,6 @@ async def core_get_reviews(
     db_session: Session,
 ):
     """Busca no banco de dados todas as avaliações.
-
-    Args:
-    request: Instância de fastapi.Request
 
     Returns:
     sucesso: Lista, do tipo Json, com todas as avaliações
@@ -199,7 +194,6 @@ async def core_get_classification_count(db_session: Session, start_date, end_dat
     feitas entre a data inicial e a data final (inclusiva).
 
     Args:
-    request: Instância de fastapi.Request
     start_date: A data inicial da busca
     end_date: A data final da busca
 
