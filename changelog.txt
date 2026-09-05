@@ -1,0 +1,5 @@
+# Changelog
+
+## [0.0.2] - 2025-05-22
+- Added sections for Project Structure, Configuration, Contributing, and License to README.md.
+- Improved structure of README.md with table of contents.
