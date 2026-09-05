@@ -80,10 +80,7 @@ The project includes an observability stack accessible via Grafana.
 - **Grafana**: Available at `http://localhost:3000` (default credentials).
 - **Dashboards**: Pre-configured dashboards can be found in the `/dashboards` directory. You can import these directly into Grafana to visualize system health, request latency, and sentiment analysis processing metrics.
 
-## How to Verify
 
-To verify the system is functioning correctly:
-1. Ensure all containers are running via `docker ps`.
-2. Access the API documentation at `http://localhost:8000/docs` and submit a test review.
-3. Check the logs in the terminal or use Loki/Grafana to verify the task was processed by the Celery worker.
-4. View metrics in Grafana to see the review processing throughput and system resource utilization.
+## Reviewer Log
+
+Reviewer last review: 2025-05-14
