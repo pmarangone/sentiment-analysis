@@ -73,7 +73,15 @@ graph LR
    docker compose down
    ```
 
-## Monitoring
+## Local development
+
+To run the project tests locally, navigate to the `backend` directory, ensure you have the required environment set up (e.g., using `uv` as detailed in `backend/README.md`), and execute:
+
+```sh
+cd backend
+pytest tests/
+```
+
 
 The project includes an observability stack accessible via Grafana.
 
