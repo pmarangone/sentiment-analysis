@@ -73,7 +73,9 @@ graph LR
    docker compose down
    ```
 
-## Monitoring
+## Local development
+
+Tests are located in the `backend/tests` directory and can be executed using `pytest` within the backend environment.
 
 The project includes an observability stack accessible via Grafana.
 
