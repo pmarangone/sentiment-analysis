@@ -1,0 +1,1 @@
+2025-05-15: Added 'Local development' section to README.md explaining how to run tests.
