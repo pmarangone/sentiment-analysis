@@ -1,0 +1,1 @@
+- Added 'Local development' section to README.md documenting how to run tests in backend/tests using pytest.
