@@ -1,0 +1,4 @@
+# Changelog
+
+- [2025-05-22] Added 'Local development' section to README.md.
+- [2025-05-22] Documented how to run tests using 'docker compose exec backend pytest'.
