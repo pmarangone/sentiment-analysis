@@ -73,7 +73,16 @@ graph LR
    docker compose down
    ```
 
-## Monitoring
+## Local Development
+
+To run the project tests, navigate to the `backend` directory and use the following commands, assuming you have the environment configured:
+
+```bash
+cd backend
+# If using uv (recommended for this project)
+uv run pytest
+```
+
 
 The project includes an observability stack accessible via Grafana.
 
