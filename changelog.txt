@@ -1,0 +1,4 @@
+# Changelog
+
+## 2025-05-15
+- Added 'Local development' section to root README.md with instructions on running tests in the backend/ directory.

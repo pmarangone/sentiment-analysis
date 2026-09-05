@@ -80,6 +80,16 @@ The project includes an observability stack accessible via Grafana.
 - **Grafana**: Available at `http://localhost:3000` (default credentials).
 - **Dashboards**: Pre-configured dashboards can be found in the `/dashboards` directory. You can import these directly into Grafana to visualize system health, request latency, and sentiment analysis processing metrics.
 
+## Local development
+
+To run the project tests in the `backend/` directory, ensure you have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed, then execute:
+
+```sh
+cd backend
+uv sync --frozen --no-cache
+pytest tests/
+```
+
 ## How to Verify
 
 To verify the system is functioning correctly:
