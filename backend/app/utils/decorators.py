@@ -42,14 +42,10 @@ def monitor_db_operation(operation: str):
 async def monitor_request_response_size(request, response):
     request_size = int(request.headers.get("content-length", 0))
     REQUEST_SIZE_HISTOGRAM.observe(request_size)
-    response_body = b"".join([chunk async for chunk in response.body_iterator])
-    response_size = len(response_body)
-    response = StreamingResponse(
-        iter([response_body]),
-        status_code=response.status_code,
-        headers=dict(response.headers),
-    )
-    RESPONSE_SIZE_HISTOGRAM.observe(response_size)
+    
+    response_size = response.headers.get("content-length")
+    if response_size:
+        RESPONSE_SIZE_HISTOGRAM.observe(int(response_size))
 
     return response
 
@@ -66,7 +62,6 @@ async def monitor_requests_middleware(request: Request, call_next):
     REQUEST_COUNT.labels(method=method, status=status, path=path).inc()
     REQUEST_LATENCY.labels(method=method, status=status, path=path).observe(duration)
 
-    if True:
-        response = await monitor_request_response_size(request, response)
+    response = await monitor_request_response_size(request, response)
 
     return response
