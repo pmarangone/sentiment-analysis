@@ -1,0 +1,1 @@
+2025-05-15: Created CONTEXT.md with initial domain definitions and an explanation of the distinction between reading and sharpening the domain model.
