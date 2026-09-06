@@ -16,6 +16,7 @@ from app.core.core import (
 )
 from app.api.responses import created, success
 from app.utils.logger import get_logger
+from app.models.review import RequestReviewModel, RequestReviewsManyModel
 
 from app.db.session import PostgresDep
 
