@@ -33,5 +33,9 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+def read_root():
+    return {"message": "Hello World"}
+
 app.include_router(reviews_router)
 app.include_router(metrics_router)
