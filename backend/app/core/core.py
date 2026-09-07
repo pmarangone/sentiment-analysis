@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app import celery_app
-from fastapi import HTTPException
+from app.core.exceptions import ReviewNotFound, ServiceError
 from app.db import ReviewRepository, CustomerRepository
 
 from app.models.review import CreateReviewModel, RequestReviewModel
@@ -24,7 +24,7 @@ async def check_customer_exists(db_session, customer_name):
         row = await customer_repository.create_customer(db_session, customer_name)
 
         if not row:
-            raise Exception("Customer was not")
+            raise ServiceError("Customer was not created")
 
     return Customer(**dict(row))
 
@@ -77,7 +77,7 @@ async def core_create_reviews_many(
 
     except Exception as exc:
         logger.error(f"Error while creating review: {str(exc)}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise ServiceError(str(exc))
 
 
 async def core_create_review_celery(
@@ -126,7 +126,7 @@ async def core_create_review_celery(
 
     except Exception as exc:
         logger.error(f"Error while creating review: {str(exc)}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise ServiceError(str(exc))
 
 
 async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
@@ -146,13 +146,13 @@ async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
 
         if review:
             return review
-        raise HTTPException(status_code=404, detail="Review not found")
+        raise ReviewNotFound("Review not found")
 
     except Exception as exc:
-        if isinstance(exc, HTTPException):
+        if isinstance(exc, (ReviewNotFound, ServiceError)):
             raise exc
         logger.error(f"Error while fetching review with id {id}: {str(exc)}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise ServiceError(str(exc))
 
 
 async def core_get_reviews(
@@ -173,13 +173,13 @@ async def core_get_reviews(
 
         if reviews:
             return reviews
-        raise HTTPException(status_code=404, detail="No reviews found")
+        raise ReviewNotFound("No reviews found")
 
     except Exception as exc:
-        if isinstance(exc, HTTPException):
+        if isinstance(exc, (ReviewNotFound, ServiceError)):
             raise exc
         logger.error(f"Error while fetching reviews: {str(exc)}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise ServiceError(str(exc))
 
 
 def core_generate_report(data):
@@ -216,10 +216,10 @@ async def core_get_classification_count(db_session: Session, start_date, end_dat
         if result:
             return core_generate_report(result)
 
-        raise HTTPException(status_code=404, detail="No classification found for the given dates")
+        raise ReviewNotFound("No classification found for the given dates")
 
     except Exception as exc:
-        if isinstance(exc, HTTPException):
+        if isinstance(exc, (ReviewNotFound, ServiceError)):
             raise exc
         logger.error(f"Error while fetching report: {str(exc)}")
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise ServiceError(str(exc))

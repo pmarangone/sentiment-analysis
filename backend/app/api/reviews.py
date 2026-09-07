@@ -5,7 +5,10 @@ from fastapi import (
     APIRouter,
     Query,
     Request,
+    HTTPException
 )
+from app.core.exceptions import ReviewNotFound, ServiceError
+from app.models.review import RequestReviewModel, RequestReviewsManyModel
 
 from app.core.core import (
     core_create_review_celery,
@@ -31,7 +34,12 @@ async def get_reviews(request: Request, db_session: PostgresDep):
     Args:
     request: Instância de fastapi.Request
     """
-    return await core_get_reviews(db_session)
+    try:
+        return await core_get_reviews(db_session)
+    except ReviewNotFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ServiceError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @reviews_router.post("/celery", status_code=201)
@@ -56,7 +64,10 @@ async def post_review_celery(
     Returns:
     A entrada do usuário tal como foi criada no banco de dados.
     """
-    return await core_create_review_celery(db_session, review)
+    try:
+        return await core_create_review_celery(db_session, review)
+    except ServiceError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @reviews_router.post("/many", status_code=201)
@@ -65,7 +76,10 @@ async def post_reviews_many(
     reviews: RequestReviewsManyModel,
     db_session: PostgresDep,
 ):
-    return await core_create_reviews_many(db_session, reviews)
+    try:
+        return await core_create_reviews_many(db_session, reviews)
+    except ServiceError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @reviews_router.get("/report", status_code=200)
@@ -86,7 +100,12 @@ async def get_reviews_report(
     Returns:
     Lista, do tipo Json, com todas as avaliações feitas entre a data inicial e data final.
     """
-    return await core_get_classification_count(db_session, start_date, end_date)
+    try:
+        return await core_get_classification_count(db_session, start_date, end_date)
+    except ReviewNotFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ServiceError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @reviews_router.get("/{id}", status_code=200)
@@ -100,4 +119,9 @@ async def get_review_by_id(request: Request, id: uuid.UUID, db_session: Postgres
     Returns:
     A avaliação referente ao ID ou retorna um erro.
     """
-    return await core_get_review_by_id(db_session, id)
+    try:
+        return await core_get_review_by_id(db_session, id)
+    except ReviewNotFound as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ServiceError as e:
+        raise HTTPException(status_code=500, detail=str(e))
