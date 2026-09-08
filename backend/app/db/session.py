@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+from app.config import DATABASE_URL, POSTGRES_POOL_SIZE
 from contextlib import asynccontextmanager
 from typing import Annotated, AsyncGenerator
 
@@ -12,8 +12,6 @@ from app.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-DATABASE_URL = DATABASE_URL = os.environ["DATABASE_URL"]
-POSTGRES_POOL_SIZE = int(os.environ["POSTGRES_POOL_SIZE"])
 
 
 class Database:
