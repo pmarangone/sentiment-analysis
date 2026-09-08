@@ -1,0 +1,2 @@
+2025-05-15: Initial changelog creation. Added 'hi' to the end of README.md.
+2025-05-15: Updated README.md, appended 'world' to 'hi'.
