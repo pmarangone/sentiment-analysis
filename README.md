@@ -79,7 +79,7 @@ The project includes an observability stack accessible via Grafana.
 
 - **Grafana**: Available at `http://localhost:3000` (default credentials).
 - **Dashboards**: Pre-configured dashboards can be found in the `/dashboards` directory. You can import these directly into Grafana to visualize system health, request latency, and sentiment analysis 
-hi
+hi!
 
 ## How to Verify
 
