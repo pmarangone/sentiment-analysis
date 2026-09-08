@@ -1,0 +1,1 @@
+2025-05-15: Initial changelog creation. Added 'hi' to the end of README.md.
