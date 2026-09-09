@@ -89,4 +89,4 @@ To verify the system is functioning correctly:
 
 4. View metrics in Grafana to see the review processing throughput and system resource utilization.
 
-Local coding task GCS metadata verification.
+Local coding task metadata verification.
