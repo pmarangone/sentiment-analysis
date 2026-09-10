@@ -7,10 +7,9 @@ from app import celery_app
 from app.core.exceptions import ReviewNotFound, ServiceError
 from app.db import ReviewRepository, CustomerRepository
 
-from app.models.review import CreateReviewModel, RequestReviewModel
+from app.models.review import CreateReviewModel, RequestReviewModel, ReviewModel
+from app.models.customer import CustomerModel
 from app.utils.logger import get_logger
-from app.db.schemas.review import ReviewSchema
-from app.db.schemas.customer import Customer
 
 review_repository = ReviewRepository()
 customer_repository = CustomerRepository()
@@ -26,7 +25,7 @@ async def check_customer_exists(db_session, customer_name):
         if not row:
             raise ServiceError("Customer was not created")
 
-    return Customer(**dict(row))
+    return CustomerModel(**dict(row))
 
 
 async def core_create_reviews_many(
@@ -51,7 +50,7 @@ async def core_create_reviews_many(
         ]
 
         rows = await review_repository.create_reviews_many(db_session, reviews)
-        created_reviews = [ReviewSchema(**dict(row)) for row in rows]
+        created_reviews = [ReviewModel(**dict(row)) for row in rows]
 
         logger.info(f"Created {len(created_reviews)} reviews")
 
@@ -106,7 +105,7 @@ async def core_create_review_celery(
             review_data=review.review_data,
         )
         row = await review_repository.create_review(db_session, review)
-        created_review = ReviewSchema(**dict(row))
+        created_review = ReviewModel(**dict(row))
 
         logger.info(f"Created review: {created_review}")
 
