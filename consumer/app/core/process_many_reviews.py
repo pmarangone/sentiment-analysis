@@ -2,7 +2,7 @@ from datetime import datetime
 import base64
 import json
 
-from app.core import get_prediction, get_prediction_next
+from app.core import get_prediction, get_prediction_next, format_sentiment_scores
 from app.ml_models.sentiment_analysis import get_analyzer
 from app.utils.logger import get_logger
 from app.db.review_repository import get_review_repository
@@ -30,11 +30,7 @@ def process_many_reviews(message):
         {
             "id": review_id,
             "classification": get_prediction(prediction),
-            "sentiment_scores": {
-                "positive": round(get_prediction_next(prediction, "POS"), 3),
-                "negative": round(get_prediction_next(prediction, "NEG"), 3),
-                "neutral": round(get_prediction_next(prediction, "NEU"), 3),
-            },
+            "sentiment_scores": format_sentiment_scores(prediction),
             "classified_at": today,
             "classified": True,
         }
