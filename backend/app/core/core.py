@@ -1,7 +1,7 @@
 import base64
 import json
 import uuid
-from sqlalchemy.orm import Session
+import asyncpg
 
 from app import celery_app
 from app.core.exceptions import ReviewNotFound, ServiceError
@@ -18,7 +18,7 @@ customer_repository = CustomerRepository()
 logger = get_logger(__name__)
 
 
-async def check_customer_exists(db_session, customer_name):
+async def check_customer_exists(db_session: asyncpg.Connection, customer_name: str):
     row = await customer_repository.get_customer_by_name(db_session, customer_name)
     if not row:
         row = await customer_repository.create_customer(db_session, customer_name)
@@ -30,156 +30,101 @@ async def check_customer_exists(db_session, customer_name):
 
 
 async def core_create_reviews_many(
-    db_session: Session,
+    db_session: asyncpg.Connection,
     reviews: RequestReviewModel,
 ):
-    try:
-        result = await customer_repository.insert_many(
-            db_session, [review["customer_name"] for review in reviews.reviews]
+    result = await customer_repository.insert_many(
+        db_session, [review["customer_name"] for review in reviews.reviews]
+    )
+
+    customer_map = {row["name"]: row["id"] for row in result}
+
+    reviews_to_create = [
+        CreateReviewModel(
+            company_id=reviews.company_id,
+            customer_id=customer_map[review["customer_name"]],
+            review_date=review["review_date"],
+            review_data=review["review_data"],
         )
+        for review in reviews.reviews
+    ]
 
-        customer_map = {row["name"]: row["id"] for row in result}
+    rows = await review_repository.create_reviews_many(db_session, reviews_to_create)
+    created_reviews = [ReviewSchema(**dict(row)) for row in rows]
 
-        reviews = [
-            CreateReviewModel(
-                company_id=reviews.company_id,
-                customer_id=customer_map[review["customer_name"]],
-                review_date=review["review_date"],
-                review_data=review["review_data"],
-            )
-            for review in reviews.reviews
-        ]
+    logger.info(f"Created {len(created_reviews)} reviews")
 
-        rows = await review_repository.create_reviews_many(db_session, reviews)
-        created_reviews = [ReviewSchema(**dict(row)) for row in rows]
+    message = [
+        {
+            "review_id": str(created.id),
+            "review_bytes": base64.b64encode(created.review_data.encode()).decode(
+                "utf-8"
+            ),
+        }
+        for created in created_reviews
+    ]
 
-        logger.info(f"Created {len(created_reviews)} reviews")
+    json_data = json.dumps(message)
 
-        message = [
-            {
-                "review_id": str(created.id),
-                "review_bytes": base64.b64encode(created.review_data.encode()).decode(
-                    "utf-8"
-                ),
-            }
-            for created in created_reviews
-        ]
+    _task = celery_app.send_task(
+        "sentiment-analysis-consumer-many",
+        args=[json_data],
+        queue="sentiment-analysis",
+    )
 
-        json_data = json.dumps(message)
-
-        _task = celery_app.send_task(
-            "sentiment-analysis-consumer-many",
-            args=[json_data],
-            queue="sentiment-analysis",
-        )
-
-        return created_reviews
-
-    except Exception as exc:
-        logger.error(f"Error while creating review: {str(exc)}")
-        raise ServiceError(str(exc))
+    return created_reviews
 
 
 async def core_create_review_celery(
-    db_session: Session,
+    db_session: asyncpg.Connection,
     review: RequestReviewModel,
 ):
-    """Cria a avaliação no banco de dados e envia a avaliação e o ID da entrada
-    no banco de dados para o consumidor.
+    customer = await check_customer_exists(db_session, review.customer_name)
 
-    Args:
-    request: Instância de fastapi.Request
-    review: Instância derivada de pydantic.BaseModel, que foi enviado no corpo da requisição.
+    review_model = CreateReviewModel(
+        company_id=review.company_id,
+        customer_id=customer.id,
+        review_date=review.review_date,
+        review_data=review.review_data,
+    )
+    row = await review_repository.create_review(db_session, review_model)
+    created_review = ReviewSchema(**dict(row))
 
-    Returns:
-    criada: A entrada do usuário tal como foi criada no banco de dados.
-    erro_servidor: Mensagem de erro, seja em criar a entrada no banco de dados ou em enviar a mensagem para
-    o consumidor.
-    """
-    try:
-        customer = await check_customer_exists(db_session, review.customer_name)
+    logger.info(f"Created review: {created_review}")
 
-        review = CreateReviewModel(
-            company_id=review.company_id,
-            customer_id=customer.id,
-            review_date=review.review_date,
-            review_data=review.review_data,
-        )
-        row = await review_repository.create_review(db_session, review)
-        created_review = ReviewSchema(**dict(row))
+    message = {
+        "review_id": str(created_review.id),
+        "review_bytes": base64.b64encode(
+            created_review.review_data.encode()
+        ).decode("utf-8"),
+    }
 
-        logger.info(f"Created review: {created_review}")
+    json_data = json.dumps(message)
 
-        message = {
-            "review_id": str(created_review.id),
-            "review_bytes": base64.b64encode(
-                created_review.review_data.encode()
-            ).decode("utf-8"),
-        }
-
-        json_data = json.dumps(message)
-
-        _task = celery_app.send_task(
-            "sentiment-analysis-consumer", args=[json_data], queue="sentiment-analysis"
-        )
-        return created_review
-
-    except Exception as exc:
-        logger.error(f"Error while creating review: {str(exc)}")
-        raise ServiceError(str(exc))
+    _task = celery_app.send_task(
+        "sentiment-analysis-consumer", args=[json_data], queue="sentiment-analysis"
+    )
+    return created_review
 
 
-async def core_get_review_by_id(db_session: Session, id: uuid.UUID):
-    """Busca no banco de dados uma avaliação pelo id.
+async def core_get_review_by_id(db_session: asyncpg.Connection, id: uuid.UUID):
+    review = await review_repository.get_review_by_id(db_session, id)
 
-    Args:
-    request: Instância de fastapi.Request
-    id: Instância uuid.UUID referente a avaliação
-
-    Returns:
-    sucesso: A avaliação do usuário
-    não_encontrado: Retorno padrão caso nenhum entrada com o id seja encontrada no banco de dados
-    erro_servidor: Mensagem de erro
-    """
-    try:
-        review = await review_repository.get_review_by_id(db_session, id)
-
-        if review:
-            return review
+    if not review:
         raise ReviewNotFound("Review not found")
 
-    except Exception as exc:
-        if isinstance(exc, (ReviewNotFound, ServiceError)):
-            raise exc
-        logger.error(f"Error while fetching review with id {id}: {str(exc)}")
-        raise ServiceError(str(exc))
+    return review
 
 
 async def core_get_reviews(
-    db_session: Session,
+    db_session: asyncpg.Connection,
 ):
-    """Busca no banco de dados todas as avaliações.
+    reviews = await review_repository.get_reviews(db_session)
 
-    Args:
-    request: Instância de fastapi.Request
-
-    Returns:
-    sucesso: Lista, do tipo Json, com todas as avaliações
-    não_encontrado: Retorno padrão caso nenhuma entrada seja encontrada no banco de dados
-    erro_servidor: Mensagem de erro
-    """
-    try:
-        reviews = await review_repository.get_reviews(db_session)
-
-        if reviews:
-            return reviews
+    if not reviews:
         raise ReviewNotFound("No reviews found")
 
-    except Exception as exc:
-        if isinstance(exc, (ReviewNotFound, ServiceError)):
-            raise exc
-        logger.error(f"Error while fetching reviews: {str(exc)}")
-        raise ServiceError(str(exc))
+    return reviews
 
 
 def core_generate_report(data):
@@ -194,32 +139,14 @@ def core_generate_report(data):
     }
 
 
-async def core_get_classification_count(db_session: Session, start_date, end_date):
-    """Gera um relatório do número de avaliações positivas, negativas ou neutras
-    feitas entre a data inicial e a data final (inclusiva).
+async def core_get_classification_count(
+    db_session: asyncpg.Connection, start_date, end_date
+):
+    result = await review_repository.get_classification_count(
+        db_session, start_date.date(), end_date.date()
+    )
 
-    Args:
-    request: Instância de fastapi.Request
-    start_date: A data inicial da busca
-    end_date: A data final da busca
-
-    Returns:
-    sucesso: Lista, do tipo Json, com todas as avaliações feitas entre a data inicial e data final
-    não_encontrado: Retorno padrão caso nenhuma entrada seja encontrada no banco de dados
-    erro_servidor: Mensagem de erro
-    """
-    try:
-        result = await review_repository.get_classification_count(
-            db_session, start_date.date(), end_date.date()
-        )
-
-        if result:
-            return core_generate_report(result)
-
+    if not result:
         raise ReviewNotFound("No classification found for the given dates")
 
-    except Exception as exc:
-        if isinstance(exc, (ReviewNotFound, ServiceError)):
-            raise exc
-        logger.error(f"Error while fetching report: {str(exc)}")
-        raise ServiceError(str(exc))
+    return core_generate_report(result)
