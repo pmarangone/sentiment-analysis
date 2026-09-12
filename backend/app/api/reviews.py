@@ -7,7 +7,7 @@ from fastapi import (
     Request,
     HTTPException
 )
-from app.core.exceptions import ReviewNotFound, ServiceError
+from app.core.exceptions import ReviewNotFound
 from app.models.review import RequestReviewModel, RequestReviewsManyModel
 
 from app.core.core import (
@@ -38,8 +38,9 @@ async def get_reviews(request: Request, db_session: PostgresDep):
         return await core_get_reviews(db_session)
     except ReviewNotFound as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except ServiceError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error while fetching reviews: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @reviews_router.post("/celery", status_code=201)
@@ -66,8 +67,9 @@ async def post_review_celery(
     """
     try:
         return await core_create_review_celery(db_session, review)
-    except ServiceError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error while creating review: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @reviews_router.post("/many", status_code=201)
@@ -78,8 +80,9 @@ async def post_reviews_many(
 ):
     try:
         return await core_create_reviews_many(db_session, reviews)
-    except ServiceError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error while creating reviews: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @reviews_router.get("/report", status_code=200)
@@ -104,8 +107,9 @@ async def get_reviews_report(
         return await core_get_classification_count(db_session, start_date, end_date)
     except ReviewNotFound as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except ServiceError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error while fetching report: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @reviews_router.get("/{id}", status_code=200)
@@ -123,5 +127,6 @@ async def get_review_by_id(request: Request, id: uuid.UUID, db_session: Postgres
         return await core_get_review_by_id(db_session, id)
     except ReviewNotFound as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except ServiceError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error while fetching review with id {id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
