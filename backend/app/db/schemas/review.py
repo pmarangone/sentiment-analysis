@@ -27,7 +27,7 @@ class ReviewSchema(Base):
     neu_score: Refere-se ao valor de sentimento 'neutro' retornado na classificação mais recente.
     """
 
-    __tablename__ = "reviews"
+    __tablename__ = "reviews_partitioned"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_id = Column(

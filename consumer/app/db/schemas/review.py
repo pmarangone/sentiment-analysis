@@ -9,7 +9,7 @@ from app.db.schemas.company import CompanySchema
 from app.db.schemas import Base
 
 classification_enum = ENUM(
-    "positive", "negative", "neutral", name="classification_enum", create_type=False
+    "POS", "NEG", "NEU", name="classification_enum", create_type=False
 )
 
 
