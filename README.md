@@ -1,28 +1,28 @@
-# Sentiment Analysis System
+# Sentiment-Analyse-System
 
-This project implements an asynchronous sentiment analysis pipeline for user reviews, utilizing a machine learning model to categorize feedback automatically.
+Dieses Projekt implementiert eine asynchrone Sentiment-Analyse-Pipeline für Benutzerbewertungen und nutzt ein Machine-Learning-Modell, um Feedback automatisch zu kategorisieren.
 
-## Architecture Overview
+## Architekturübersicht
 
-The application follows an asynchronous task-queue pattern to ensure scalable and decoupled processing of user reviews:
+Die Anwendung folgt einem asynchronen Task-Queue-Muster, um eine skalierbare und entkoppelte Verarbeitung von Benutzerbewertungen sicherzustellen:
 
-- **API Layer (FastAPI)**: Serves endpoints to receive reviews and offloads processing to a background task queue.
-- **Messaging Layer (RabbitMQ)**: Acts as the message broker between the API and the background worker.
-- **Processing Layer (Celery Consumer)**: Listens to the message queue, performs ML sentiment analysis using pre-trained models, and persists the result to the database.
-- **Database Layer (PostgreSQL)**: Stores company, review, and customer data.
-- **Observability Layer**: 
-    - **Prometheus/Celery Exporter**: Collects system and task metrics.
-    - **Loki**: Aggregates logs for troubleshooting.
-    - **Grafana**: Provides visualization of metrics and logs.
+- **API-Schicht (FastAPI)**: Stellt Endpunkte bereit, um Bewertungen zu empfangen und die Verarbeitung an eine Hintergrund-Task-Queue auszulagern.
+- **Messaging-Schicht (RabbitMQ)**: Fungiert als Message-Broker zwischen der API und dem Hintergrund-Worker.
+- **Verarbeitungsschicht (Celery Consumer)**: Hört auf die Message-Queue, führt eine ML-Sentiment-Analyse mithilfe vortrainierter Modelle durch und speichert das Ergebnis in der Datenbank.
+- **Datenbankschicht (PostgreSQL)**: Speichert Unternehmens-, Bewertungs- und Kundendaten.
+- **Observability-Schicht (Überwachung)**:
+    - **Prometheus/Celery Exporter**: Sammelt System- und Task-Metriken.
+    - **Loki**: Aggregiert Logs zur Fehlerbehebung.
+    - **Grafana**: Bietet Visualisierungen für Metriken und Logs.
 
-## System Diagram
+## Systemdiagramm
 
 ```mermaid
 graph LR
     User[Client] -->|POST /reviews| API[FastAPI Backend]
     API -->|Enqueue Task| MQ[RabbitMQ]
     MQ -->|Consume| Consumer[Celery Consumer]
-    Consumer -->|Run Inference| ML[Sentiment Model]
+    Consumer -->|Run Inference| ML[Sentiment-Modell]
     Consumer -->|Save| DB[(PostgreSQL)]
     
     subgraph Observability
@@ -37,53 +37,53 @@ graph LR
     Prometheus & Loki -->|Data| Grafana
 ```
 
-## Tech Stack
+## Technologiestack
 
 - **API**: FastAPI
-- **Task Queue**: Celery, RabbitMQ
-- **Database**: PostgreSQL
+- **Task-Queue**: Celery, RabbitMQ
+- **Datenbank**: PostgreSQL
 - **Monitoring**: Prometheus, Loki, Grafana
 
-## Prerequisites
+## Voraussetzungen
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
-## Setup & Running
+## Einrichtung & Ausführung
 
-1. **Clone the repository**:
+1. **Repository klonen**:
    ```sh
    git clone <repository-url>
    cd <repository-directory>
    ```
 
-2. **Build and start the containers**:
+2. **Container erstellen und starten**:
    ```sh
    docker compose up --build
    ```
-   This command initializes the entire stack, including the backend, consumer, message broker, database, and the observability stack.
+   Dieser Befehl initialisiert den gesamten Stack, einschließlich Backend, Consumer, Message-Broker, Datenbank und dem Observability-Stack.
 
-3. **Check container status**:
+3. **Container-Status prüfen**:
    ```sh
    docker ps
    ```
 
-4. **Stop the containers**:
+4. **Container stoppen**:
    ```sh
    docker compose down
    ```
 
 ## Monitoring
 
-The project includes an observability stack accessible via Grafana.
+Das Projekt enthält einen Observability-Stack, der über Grafana zugänglich ist.
 
-- **Grafana**: Available at `http://localhost:3000` (default credentials).
-- **Dashboards**: Pre-configured dashboards can be found in the `/dashboards` directory. You can import these directly into Grafana to visualize system health, request latency, and sentiment analysis processing metrics.
+- **Grafana**: Verfügbar unter `http://localhost:3000` (Standard-Anmeldedaten).
+- **Dashboards**: Vorkonfigurierte Dashboards befinden sich im Verzeichnis `/dashboards`. Sie können diese direkt in Grafana importieren, um den Systemzustand, die Anfragelatenz und die Metriken der Sentiment-Analyse zu visualisieren.
 
-## How to Verify
+## Überprüfung
 
-To verify the system is functioning correctly:
-1. Ensure all containers are running via `docker ps`.
-2. Access the API documentation at `http://localhost:8000/docs` and submit a test review.
-3. Check the logs in the terminal or use Loki/Grafana to verify the task was processed by the Celery worker.
-4. View metrics in Grafana to see the review processing throughput and system resource utilization.
+So überprüfen Sie, ob das System ordnungsgemäß funktioniert:
+1. Stellen Sie sicher, dass alle Container über `docker ps` ausgeführt werden.
+2. Greifen Sie auf die API-Dokumentation unter `http://localhost:8000/docs` zu und übermitteln Sie eine Testbewertung.
+3. Überprüfen Sie die Protokolle im Terminal oder verwenden Sie Loki/Grafana, um zu verifizieren, dass der Task vom Celery-Worker verarbeitet wurde.
+4. Betrachten Sie die Metriken in Grafana, um den Durchsatz der Bewertungsverarbeitung und die Ressourcennutzung des Systems zu sehen.
